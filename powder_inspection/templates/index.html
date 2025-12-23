@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배합공정관리 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 사이드바 네비게이션 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1 data-i18n="appTitle">배합공정 관리시스템</h1>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+                <span class="nav-item-icon">📊</span>
+                <span data-i18n="navDashboard">대시보드</span>
+            </div>
+            <div class="nav-item" onclick="showPage('incoming')" data-page="incoming">
+                <span class="nav-item-icon">📦</span>
+                <span data-i18n="navIncoming">수입검사</span>
+            </div>
+            <div class="nav-item" onclick="showPage('blending-orders')" data-page="blending-orders">
+                <span class="nav-item-icon">📄</span>
+                <span data-i18n="navBlendingOrders">배합작업지시서</span>
+            </div>
+            <div class="nav-item" onclick="showPage('blending')" data-page="blending">
+                <span class="nav-item-icon">⚗️</span>
+                <span data-i18n="navBlending">배합작업</span>
+            </div>
+            <div class="nav-item" onclick="showPage('mixing')" data-page="mixing">
+                <span class="nav-item-icon">🔧</span>
+                <span data-i18n="navMixing">배합검사</span>
+            </div>
+            <div class="nav-item" onclick="showComingSoon('REWORK')" style="opacity: 0.6;">
+                <span class="nav-item-icon">🔄</span>
+                <span data-i18n="navRework">REWORK</span>
+            </div>
+            <div class="nav-item" onclick="showPage('blending-log')" data-page="blending-log">
+                <span class="nav-item-icon">📋</span>
+                <span data-i18n="navBlendingLog">배합작업 조회</span>
+            </div>
+            <div class="nav-item" onclick="showPage('search')" data-page="search">
+                <span class="nav-item-icon">🔍</span>
+                <span data-i18n="navSearchResults">검사결과 조회</span>
+            </div>
+            <div class="nav-item" onclick="showPage('traceability')" data-page="traceability">
+                <span class="nav-item-icon">🔗</span>
+                <span data-i18n="navTraceability">추적성 조회</span>
+            </div>
+            <div class="nav-item" onclick="showPage('admin')" data-page="admin">
+                <span class="nav-item-icon">⚙️</span>
+                <span data-i18n="navAdmin">관리자 모드</span>
+            </div>
+        </div>
+        <div class="language-switcher">
+            <button class="lang-btn" onclick="toggleLanguage()">
+                <span id="langIcon">🌐</span>
+                <span id="langText">English</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <div class="main-content">
+        <!-- 대시보드 페이지 -->
+        <div id="dashboard" class="page active">
+            <div class="page-header">
+                <h2 data-i18n="dashboardTitle">대시보드</h2>
+                <p data-i18n="dashboardDesc">진행중인 검사 목록과 전체 현황을 확인하세요</p>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 <span data-i18n="ongoingInspections">진행중인 검사</span></div>
+                <div id="incompleteList">
+                    <div class="loading" data-i18n="loading">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 수입검사 시작 페이지 -->
+        <div id="incoming" class="page">
+            <div class="page-header">
+                <h2 data-i18n="incomingTitle">수입검사 시작</h2>
+                <p data-i18n="incomingDesc">원료 분말의 수입검사를 시작합니다. 모든 필수 항목을 입력하세요</p>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="inspectionInfo">검사 정보 입력</div>
+                <form id="incomingForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label><span data-i18n="powderName">분말명</span> *</label>
+                            <select id="incomingPowderName" required>
+                                <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="lotNumberLabel">LOT 번호</span> *</label>
+                            <input type="text" id="incomingLotNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="inspectionTypeLabel">검사 타입</span> *</label>
+                            <select id="incomingInspectionType" required>
+                                <option value="일상점검" data-i18n="dailyInspection">일상점검</option>
+                                <option value="정기점검" data-i18n="periodicInspection">정기점검</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="inspectorLabel">검사자</span> *</label>
+                            <select id="incomingInspector" required>
+                                <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="margin-top: 10px;" data-i18n="startButton">검사 시작</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 배합검사 시작 페이지 -->
+        <div id="mixing" class="page">
+            <div class="page-header">
+                <h2 data-i18n="mixingTitle">배합검사 시작</h2>
+                <p data-i18n="mixingDesc">배합 분말의 검사를 시작합니다. 모든 필수 항목을 입력하세요</p>
+            </div>
+            <div class="card">
+                <h3>완료된 배합작업 (배합검사 대상)</h3>
+                <div id="mixingCompletedList">로딩 중...</div>
+            </div>
+        </div>
+
+        <!-- 배합작업지시서 페이지 -->
+        <div id="blending-orders" class="page">
+            <div class="page-header">
+                <h2 data-i18n="blendingOrdersTitle">배합작업지시서</h2>
+                <p data-i18n="blendingOrdersDesc">배합작업지시서를 생성하고 진행상황을 관리합니다</p>
+            </div>
+
+            <!-- 작업지시서 생성 폼 -->
+            <div class="card">
+                <h3 data-i18n="createBlendingOrder">작업지시서 생성</h3>
+                <form id="blendingOrderForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label><span data-i18n="productName">제품명</span> *</label>
+                            <select id="orderProductName" required onchange="loadOrderRecipe()">
+                                <option value="">제품 선택</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>작업일자</label>
+                            <input type="date" id="orderDate" style="padding:8px;">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="totalTargetWeight">총 목표중량 (kg)</span> *</label>
+                            <input type="number" step="100" id="orderTotalWeight" required placeholder="예: 10000">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="createdBy">작성자</span></label>
+                            <input type="text" id="orderCreatedBy" placeholder="작성자 이름">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="notes">비고</span></label>
+                            <input type="text" id="orderNotes" placeholder="비고사항">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" data-i18n="createOrder">작업지시서 생성</button>
+                </form>
+            </div>
+
+            <!-- 작업지시서 목록 -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 data-i18n="blendingOrderList">작업지시서 목록</h3>
+                    <div>
+                        <label style="margin-right: 10px;" data-i18n="filterByStatus">상태 필터:</label>
+                        <select id="orderStatusFilter" onchange="loadBlendingOrders()">
+                            <option value="all" data-i18n="allStatus">전체</option>
+                            <option value="in_progress" data-i18n="inProgressStatus" selected>진행중</option>
+                            <option value="completed" data-i18n="completedStatus">완료</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="blendingOrdersList"></div>
+            </div>
+        </div>
+
+        <!-- 배합 작업 페이지 -->
+        <div id="blending" class="page">
+            <div class="page-header">
+                <h2 data-i18n="blendingTitle">배합 작업 지시</h2>
+                <p data-i18n="blendingDesc">제품 Recipe를 선택하고 배합 작업을 시작합니다</p>
+            </div>
+            <!-- 작업지시서 목록 (이 화면에서 작업시작 가능) -->
+            <div class="card">
+                <h3 data-i18n="blendingOrderList">작업지시서 목록</h3>
+                <div id="blendingOrdersForBlending">로딩 중...</div>
+            </div>
+
+            <div class="card" id="blendingFormCard" style="display:none;">
+                <div class="card-title" data-i18n="blendingWorkOrder">작업 지시 정보</div>
+                <form id="blendingForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label><span data-i18n="productName">제품명</span> *</label>
+                            <select id="blendingProductName" onchange="loadRecipeForProduct()" required>
+                                <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="workOrderNumber">작업지시 번호</span></label>
+                            <input type="text" id="blendingWorkOrder" placeholder="예: WO-20250119-001 (선택사항)">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="batchLotNumber">배합 LOT 번호</span> *</label>
+                            <input type="text" id="blendingBatchLot" required readonly style="background: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label><span data-i18n="blendingWeight">배합중량 (kg)</span> *</label>
+                            <select id="blendingTargetWeight" required>
+                                <option value="">선택하세요</option>
+                                <option value="1000">1 ton (1,000 kg)</option>
+                                <option value="2000">2 ton (2,000 kg)</option>
+                                <option value="3000">3 ton (3,000 kg)</option>
+                                <option value="4000">4 ton (4,000 kg)</option>
+                                <option value="5000">5 ton (5,000 kg)</option>
+                            </select>
+                        </div>
+                        <!-- Main 분말 중량 선택 영역 (동적 생성) -->
+                        <div id="mainPowderWeightsContainer" style="display: none;"></div>
+                        <div class="form-group">
+                            <label><span data-i18n="operator">작업자</span> *</label>
+                            <select id="blendingOperator" required>
+                                <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Recipe 미리보기 -->
+                    <div id="recipePreview" style="margin-top: 20px; display: none;">
+                        <h4 data-i18n="recipePreview">배합 구성 (Recipe)</h4>
+                        <div id="recipePreviewContent"></div>
+                    </div>
+
+                    <button type="submit" class="btn" style="margin-top: 20px;" data-i18n="startBlendingWork">배합 작업 시작</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 배합작업 조회 페이지 -->
+        <div id="blending-log" class="page">
+            <div class="page-header">
+                <h2 data-i18n="blendingLogTitle">배합작업 조회</h2>
+                <p data-i18n="blendingLogDesc">완료된 배합작업을 조회하고 배합검사를 진행합니다</p>
+            </div>
+
+            <div class="card">
+                <div class="card-title" data-i18n="blendingWorkList">배합작업 목록</div>
+
+                <!-- 필터 옵션 -->
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                    <label data-i18n="status">상태:</label>
+                    <select id="blendingLogStatusFilter" onchange="loadBlendingWorks()" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="all" data-i18n="all">전체</option>
+                        <option value="completed" data-i18n="completed">완료</option>
+                        <option value="in_progress" data-i18n="inProgress" selected>진행중</option>
+                    </select>
+
+                    <label style="margin-left: 12px;">작업완료일</label>
+                    <input type="date" id="filterCompletedDate" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+
+                    <label style="margin-left: 12px;">제품명</label>
+                    <input type="text" id="filterProductName" placeholder="제품명" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+
+                    <label style="margin-left: 12px;">배합 LOT</label>
+                    <input type="text" id="filterBatchLot" placeholder="배합 LOT 번호" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+
+                    <button class="btn secondary" style="margin-left:8px;" onclick="loadBlendingWorks()">조회</button>
+                    <button class="btn" style="margin-left:6px;" onclick="resetBlendingFilters()">초기화</button>
+                </div>
+
+                <!-- 배합작업 목록 테이블 -->
+                <div id="blendingWorksTableContainer" style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="workOrderNumber">작업지시 번호</th>
+                                <th data-i18n="productName">제품명</th>
+                                <th data-i18n="batchLotNumber">배합 LOT</th>
+                                <th data-i18n="operator">작업자</th>
+                                <th data-i18n="status">상태</th>
+                                <th data-i18n="startTime">시작시간</th>
+                                <th data-i18n="endTime">완료시간</th>
+                                <th data-i18n="actions">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blendingWorksTableBody">
+                            <tr>
+                                <td colspan="8" class="loading" data-i18n="loading">로딩 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 원재료 투입 페이지 -->
+        <div id="material-input" class="page">
+            <div class="page-header">
+                <h2 data-i18n="materialInputTitle">원재료 투입</h2>
+                <p data-i18n="materialInputDesc">배합 작업의 원재료를 순서대로 투입하고 기록합니다</p>
+            </div>
+
+            <!-- 작업 정보 표시 -->
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="workOrderNumber">작업지시 번호</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="materialWorkOrder"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="productName">제품명</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="materialProductName"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="batchLotNumber">배합 LOT</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="materialBatchLot"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="materialInputProgress">투입 진행률</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="materialProgress"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 원재료 투입 목록 -->
+            <div id="materialInputList"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" onclick="completeBlendingWork()" id="completeBlendingBtn" disabled data-i18n="completeBlending">배합 작업 완료</button>
+                <button class="btn danger" onclick="showPage('dashboard')" data-i18n="backToDashboard">대시보드로 돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 검사 진행 페이지 -->
+        <div id="inspection" class="page">
+            <div class="page-header">
+                <h2 data-i18n="inspectionTitle">검사 진행</h2>
+                <p data-i18n="inspectionDesc">각 검사 항목을 차례대로 입력하세요</p>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="powderName">분말명</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="infoPowderName"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="lotNumberLabel">LOT 번호</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="infoLotNumber"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="inspectorLabel">검사자</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="infoInspector"></span></p>
+                    </div>
+                    <div>
+                        <p style="opacity: 0.9; margin-bottom: 5px;" data-i18n="progressStatus">진행 상황</p>
+                        <p style="font-size: 1.2em; font-weight: 600;"><span id="infoProgress"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div id="inspectionItems"></div>
+        </div>
+
+        <!-- 검사 결과 조회 페이지 -->
+        <div id="search" class="page">
+            <div class="page-header">
+                <h2 data-i18n="searchTitle">검사 결과 조회</h2>
+                <p data-i18n="searchDesc">완료된 검사 결과를 검색하고 상세 내용을 확인하세요</p>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="searchCondition">검색 조건</div>
+                <form id="searchForm" style="margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label data-i18n="category">검사구분</label>
+                            <select id="searchCategory">
+                                <option value="" data-i18n="all">전체</option>
+                                <option value="incoming" data-i18n="incoming">수입검사</option>
+                                <option value="mixing" data-i18n="mixing">배합검사</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="powderName">분말명</label>
+                            <select id="searchPowderName">
+                                <option value="" data-i18n="all">전체</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="lotNumberLabel">LOT 번호</label>
+                            <input type="text" id="searchLotNumber" data-i18n-placeholder="lotNumberPlaceholder" placeholder="LOT 번호 입력">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: end;">
+                        <div class="form-group">
+                            <label data-i18n="dateFrom">시작일</label>
+                            <input type="date" id="searchDateFrom">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="dateTo">종료일</label>
+                            <input type="date" id="searchDateTo">
+                        </div>
+                        <button type="submit" class="btn secondary" style="margin-bottom: 15px;" data-i18n="searchButton">조회</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="searchResults">검색 결과</div>
+                <div id="searchResults">
+                    <div class="empty-message" data-i18n="searchPrompt">검색 조건을 입력하고 조회 버튼을 클릭하세요</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검사 상세 페이지 -->
+        <div id="detail" class="page">
+            <div class="page-header">
+                <h2 data-i18n="detailTitle">검사 상세 정보</h2>
+                <p data-i18n="detailDesc">검사의 모든 항목과 결과를 확인하세요</p>
+            </div>
+            <button class="btn" onclick="showPage('search')" style="margin-bottom: 15px;" data-i18n="backToList">← 목록으로</button>
+            <div id="detailContent"></div>
+        </div>
+
+        <!-- 추적성 조회 페이지 -->
+        <div id="traceability" class="page">
+            <div class="page-header">
+                <h2 data-i18n="traceabilityTitle">추적성 조회</h2>
+                <p data-i18n="traceabilityDesc">LOT 번호로 원재료부터 배합까지 전체 추적성을 확인하세요</p>
+            </div>
+
+            <!-- 검색 폼 -->
+            <div class="card">
+                <div class="card-title" data-i18n="traceabilitySearch">추적성 검색</div>
+                <form id="traceabilityForm" style="display: flex; gap: 10px; align-items: end;">
+                    <div class="form-group" style="flex: 1;">
+                        <label data-i18n="lotNumberLabel">LOT 번호</label>
+                        <input type="text" id="traceabilityLotNumber" required placeholder="배합 LOT 또는 원재료 LOT 입력">
+                    </div>
+                    <button type="submit" class="btn" style="padding: 12px 30px;" data-i18n="searchButton">조회</button>
+                </form>
+            </div>
+
+            <!-- 추적 결과 -->
+            <div id="traceabilityResults"></div>
+        </div>
+
+        <!-- 관리자 페이지 -->
+        <div id="admin" class="page">
+            <div class="page-header">
+                <h2 data-i18n="adminTitle">관리자 설정</h2>
+            </div>
+
+            <!-- 관리자 서브메뉴 탭 -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="showAdminTab('powder-spec')">
+                    <span data-i18n="adminTabPowderSpec">분말사양관리</span>
+                </button>
+                <button class="admin-tab" onclick="showAdminTab('user-mgmt')">
+                    <span data-i18n="adminTabUserMgmt">검사자&작업자관리</span>
+                </button>
+                <button class="admin-tab" onclick="showAdminTab('recipe-mgmt')">
+                    <span data-i18n="adminTabRecipeMgmt">배합규격서관리</span>
+                </button>
+            </div>
+
+            <!-- 탭 1: 분말사양관리 -->
+            <div id="powder-spec-tab" class="admin-tab-content active">
+            <!-- 분말 사양 관리 -->
+            <div class="card">
+                <div class="card-title">⚙️ <span data-i18n="powderSpecManagement">분말 사양 관리</span></div>
+                <button class="btn secondary" onclick="showAddPowderForm()" style="margin-bottom: 15px;" data-i18n="addNewPowder">+ 새 분말 추가</button>
+
+                <!-- 분말 추가/수정 폼 -->
+                <div id="powderFormContainer" style="display: none; margin-bottom: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                    <h3 id="powderFormTitle" data-i18n="addPowder">새 분말 추가</h3>
+                    <form id="powderForm">
+                        <input type="hidden" id="powderSpecId">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label data-i18n="category">검사구분 *</label>
+                                <select id="adminPowderCategory" required onchange="handlePowderCategoryChange()">
+                                    <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                                    <option value="incoming" data-i18n="incoming">수입검사</option>
+                                    <option value="mixing" data-i18n="mixing">배합검사</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>분말명 *</label>
+                                <input type="text" id="adminPowderNameInput" required style="display: none;">
+                                <select id="adminPowderNameSelect" required style="display: none;">
+                                    <option value="" data-i18n="selectPlaceholder">선택하세요</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 20px 0 10px 0;">검사 항목 규격 설정</h4>
+                        <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                            빈 칸은 해당 항목을 사용하지 않음을 의미합니다.<br>
+                            검사 타입: 일상 = 일상점검 시 검사, 정기 = 정기점검 시 검사, 비활성 = 사용 안 함
+                        </p>
+
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; min-width: 600px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">검사항목</th>
+                                        <th style="width: 10%;">단위</th>
+                                        <th style="width: 20%;">최소값</th>
+                                        <th style="width: 20%;">최대값</th>
+                                        <th style="width: 20%;">검사타입</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>유동도</strong></td>
+                                        <td>s/50g</td>
+                                        <td><input type="number" step="0.01" id="flowRateMin" placeholder="25" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="flowRateMax" placeholder="35" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="flowRateType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>겉보기밀도</strong></td>
+                                        <td>g/cm³</td>
+                                        <td><input type="number" step="0.01" id="apparentDensityMin" placeholder="2.5" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="apparentDensityMax" placeholder="3.0" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="apparentDensityType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>C함량</strong></td>
+                                        <td>%</td>
+                                        <td><input type="number" step="0.01" id="cContentMin" placeholder="0.5" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="cContentMax" placeholder="0.8" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="cContentType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Cu함량</strong></td>
+                                        <td>%</td>
+                                        <td><input type="number" step="0.01" id="cuContentMin" placeholder="1.0" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="cuContentMax" placeholder="2.0" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="cuContentType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>수분도</strong></td>
+                                        <td>%</td>
+                                        <td><input type="number" step="0.01" id="moistureMin" placeholder="0" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="moistureMax" placeholder="0.5" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="moistureType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>회분도</strong></td>
+                                        <td>%</td>
+                                        <td><input type="number" step="0.01" id="ashMin" placeholder="0" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="ashMax" placeholder="1.0" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="ashType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>소결변화율</strong></td>
+                                        <td>%</td>
+                                        <td><input type="number" step="0.01" id="sinterChangeRateMin" placeholder="5" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.01" id="sinterChangeRateMax" placeholder="8" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="sinterChangeRateType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>소결강도</strong></td>
+                                        <td>MPa</td>
+                                        <td><input type="number" step="0.1" id="sinterStrengthMin" placeholder="850" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.1" id="sinterStrengthMax" placeholder="950" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="sinterStrengthType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>성형강도</strong></td>
+                                        <td>N</td>
+                                        <td><input type="number" step="0.1" id="formingStrengthMin" placeholder="120" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.1" id="formingStrengthMax" placeholder="150" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="formingStrengthType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>성형하중</strong></td>
+                                        <td>MPa</td>
+                                        <td><input type="number" step="0.1" id="formingLoadMin" placeholder="180" style="width: 100%; padding: 8px;"></td>
+                                        <td><input type="number" step="0.1" id="formingLoadMax" placeholder="220" style="width: 100%; padding: 8px;"></td>
+                                        <td>
+                                            <select id="formingLoadType" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>입도분석</strong></td>
+                                        <td colspan="3" style="font-size: 0.9em; color: #666;">
+                                            활성화 시 아래에서 Mesh별 규격 설정
+                                        </td>
+                                        <td>
+                                            <select id="particleSizeType" onchange="toggleParticleInputs()" style="width: 100%; padding: 8px;">
+                                                <option value="일상">일상</option>
+                                                <option value="정기">정기</option>
+                                                <option value="비활성">비활성</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 입도분석 규격 입력 섹션 -->
+                        <div id="particleSizeInputs" style="display: none; margin-top: 25px; padding: 20px; background: #f0f4f8; border-radius: 8px; border: 2px solid #667eea;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">📊 입도분석 규격 설정</h4>
+                            <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">각 Mesh Size별 최소값과 최대값을 %로 입력하세요.</p>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">+180 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_180_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_180_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">+150 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_150_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_150_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">+106 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_106_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_106_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">+75 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_75_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_75_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">+45 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_45_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_45_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                                <div style="padding: 12px; background: white; border-radius: 6px;">
+                                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">-45 um</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <input type="number" step="0.1" id="particle_45m_min" placeholder="최소 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                        <input type="number" step="0.1" id="particle_45m_max" placeholder="최대 %" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn" data-i18n="save">저장</button>
+                            <button type="button" class="btn secondary" onclick="hidePowderForm()" data-i18n="cancel">취소</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 분말 목록 -->
+                <div id="powderList"></div>
+            </div>
+            </div>
+            <!-- 탭 1 끝 -->
+
+            <!-- 탭 2: 검사자&작업자관리 -->
+            <div id="user-mgmt-tab" class="admin-tab-content">
+            <!-- 검사자 관리 -->
+            <div class="card">
+                <div class="card-title">👤 <span data-i18n="inspectorManagement">검사자 관리</span></div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="newInspectorName" data-i18n-placeholder="inspectorNamePlaceholder" placeholder="검사자 이름" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button class="btn secondary" onclick="addInspector()" data-i18n="add">추가</button>
+                </div>
+                <div id="inspectorList"></div>
+            </div>
+
+            <!-- 작업자 관리 -->
+            <div class="card">
+                <div class="card-title">👷 <span data-i18n="operatorManagement">작업자 관리</span></div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="newOperatorName" data-i18n-placeholder="operatorNamePlaceholder" placeholder="작업자 이름" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button class="btn secondary" onclick="addOperator()" data-i18n="add">추가</button>
+                </div>
+                <div id="operatorList"></div>
+            </div>
+            </div>
+            <!-- 탭 2 끝 -->
+
+            <!-- 탭 3: 배합규격서관리 -->
+            <div id="recipe-mgmt-tab" class="admin-tab-content">
+            <!-- Recipe(배합 규격서) 관리 -->
+            <div class="card">
+                <div class="card-title">📋 <span data-i18n="recipeManagement">배합 규격서 (Recipe) 관리</span></div>
+                <button class="btn secondary" onclick="showAddProductForm()" style="margin-bottom: 15px;" data-i18n="addNewProduct">+ 새 제품 추가</button>
+
+                <!-- 제품/Recipe 추가/수정 폼 -->
+                <div id="productFormContainer" style="display: none; margin-bottom: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                    <h3 id="productFormTitle">새 제품 추가</h3>
+                    <form id="productForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label><span data-i18n="productName">제품명</span> *</label>
+                                <input type="text" id="recipeProductName" required>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="productCode">제품 코드</label>
+                                <input type="text" id="recipeProductCode">
+                            </div>
+                        </div>
+
+                        <h4 data-i18n="recipeComposition">배합 구성</h4>
+                        <div id="recipeLines"></div>
+
+                        <button type="button" class="btn secondary" onclick="addRecipeLine()" style="margin: 10px 0;" data-i18n="addRecipeLine">+ 분말 추가</button>
+
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn" data-i18n="save">저장</button>
+                            <button type="button" class="btn secondary" onclick="hideProductForm()" data-i18n="cancel">취소</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 제품 목록 -->
+                <div id="productList"></div>
+            </div>
+            </div>
+            <!-- 탭 3 끝 -->
+        </div>
+    </div> <!-- end main-content -->
+
+
+    <script src="{{ url_for('static', filename='js/translations.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
