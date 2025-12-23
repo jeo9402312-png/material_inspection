@@ -2099,9 +2099,9 @@ def start_blending_work():
 def generate_batch_lot():
     """배합 LOT 번호 자동 생성"""
     try:
-        # BATCH-YYYYMMDD-XXX 형식 (KST 기준 날짜)
+        # YYYYMMDD-XXX 형식 (KST 기준 날짜)
         today = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y%m%d')
-        prefix = f'BATCH-{today}-'
+        prefix = f'{today}-'
 
         with closing(get_db()) as conn:
             cursor = conn.cursor()
