@@ -849,6 +849,17 @@ function updateLanguage() {
                         select.appendChild(option);
                     });
                 }
+                
+                // 검색 날짜 기본값 설정 (오늘 날짜)
+                const today = new Date().toISOString().split('T')[0];
+                const searchDateFromInput = document.getElementById('searchDateFrom');
+                const searchDateToInput = document.getElementById('searchDateTo');
+                if (searchDateFromInput && !searchDateFromInput.value) {
+                    searchDateFromInput.value = today;
+                }
+                if (searchDateToInput && !searchDateToInput.value) {
+                    searchDateToInput.value = today;
+                }
             } catch (error) {
                 console.error('분말 목록 로딩 실패:', error);
             }
@@ -3360,6 +3371,13 @@ function updateLanguage() {
 
         async function loadBlendingWorks() {
             try {
+                // 배합작업조회 날짜 기본값 설정 (오늘 날짜)
+                const today = new Date().toISOString().split('T')[0];
+                const filterCompletedDateInput = document.getElementById('filterCompletedDate');
+                if (filterCompletedDateInput && !filterCompletedDateInput.value) {
+                    filterCompletedDateInput.value = today;
+                }
+                
                 const statusFilter = document.getElementById('blendingLogStatusFilter').value;
                 const completedDate = document.getElementById('filterCompletedDate') ? document.getElementById('filterCompletedDate').value : '';
                 const productName = document.getElementById('filterProductName') ? document.getElementById('filterProductName').value.trim() : '';
