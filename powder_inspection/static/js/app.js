@@ -173,33 +173,10 @@ function updateLanguage() {
                                 <td>${item.lot_number}</td>
                                 <td>${item.inspection_type}</td>
                                 <td>${item.inspector}</td>
-                                <td><span class="badge progress">${item.progress}</span></td>
-                                    namesDiv.innerHTML = '';
-                                    const filtered = filterCategory ? data.data.filter(s => s.category === filterCategory) : data.data;
-                                    filtered.forEach(spec => {
-                                        const item = document.createElement('div');
-                                        item.className = 'powder-item';
-                                        item.dataset.specId = spec.id;
-                                        item.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">` +
-                                            `<div><strong>${spec.powder_name}</strong><div style="font-size:0.85em;color:#666;">${spec.category === 'incoming' ? t('incoming') : t('mixing')}</div></div>` +
-                                            `</div>`;
+                                <td>
                                     <button class="btn" onclick="continueInspection('${item.powder_name}', '${item.lot_number}', '${item.category}')" style="margin-right: 5px;">${t('continue')}</button>
-                                        item.addEventListener('click', () => {
-                                            document.querySelectorAll('.vertical-list .powder-item').forEach(el => el.classList.remove('active'));
-                                            item.classList.add('active');
-                                            showPowderSpecDetail(spec.id);
-                                        });
                                     <button class="btn danger" onclick="deleteIncompleteInspection('${item.powder_name}', '${item.lot_number}')">${t('delete')}</button>
-                                        namesDiv.appendChild(item);
-                                    });
                                 </td>
-                                    // 자동 선택
-                                    const first = namesDiv.querySelector('.powder-item');
-                                    if (first) {
-                                        first.classList.add('active');
-                                        const firstId = first.dataset.specId;
-                                        showPowderSpecDetail(parseInt(firstId));
-                                    }
                             </tr>
                         `;
                     });
