@@ -2381,21 +2381,25 @@ function updateLanguage() {
                     if (recipe.is_main) {
                         // main이 한 개면 전체 배합중량을 할당, 여러개면 ratio로 분배
                         if (mainRecipes.length === 1) {
+                            recipe.calculated_weight = totalMainWeight;
                             calculatedWeightDisplay = formatNumber(totalMainWeight.toFixed(2));
                         } else if (totalMainRatio > 0) {
                             const w = totalMainWeight * (recipe.ratio / totalMainRatio);
+                            recipe.calculated_weight = w;
                             calculatedWeightDisplay = formatNumber(w.toFixed(2));
                         }
                     } else {
                         // 비주 분말: 총 Main 중량(=배합중량)을 기준으로 비율대로 계산
                         if (totalMainRatio > 0) {
                             const w = totalMainWeight * (recipe.ratio / totalMainRatio);
+                            recipe.calculated_weight = w;
                             calculatedWeightDisplay = formatNumber(w.toFixed(2));
                         }
                     }
                 } else {
                     // Main 분말이 없을 때는 기존 방식 - 배합중량 기준 비율로 계산
                     const w = blendingWeight * (recipe.ratio / 100);
+                    recipe.calculated_weight = w;
                     calculatedWeightDisplay = formatNumber(w.toFixed(2));
                 }
 
