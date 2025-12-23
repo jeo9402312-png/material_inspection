@@ -3505,6 +3505,7 @@ function updateLanguage() {
             e.preventDefault();
 
             const lotNumber = document.getElementById('traceabilityLotNumber').value.trim();
+            const powderName = document.getElementById('traceabilityPowderName').value.trim();
 
             if (!lotNumber) {
                 alert('LOT 번호를 입력하세요.');
@@ -3513,7 +3514,11 @@ function updateLanguage() {
 
             try {
                 // 1. 먼저 LOT 유형 확인
-                const searchResponse = await fetch(`${API_BASE}/api/traceability/search?lot_number=${encodeURIComponent(lotNumber)}`);
+                let searchUrl = `${API_BASE}/api/traceability/search?lot_number=${encodeURIComponent(lotNumber)}`;
+                if (powderName) {
+                    searchUrl += `&powder_name=${encodeURIComponent(powderName)}`;
+                }
+                const searchResponse = await fetch(searchUrl);
                 const searchData = await searchResponse.json();
 
                 if (!searchData.success) {
@@ -3533,7 +3538,7 @@ function updateLanguage() {
                     await traceByBatchLot(lotNumber);
                 } else if (foundAs.includes('material_lot')) {
                     // 원재료 LOT로 추적 (Forward Traceability)
-                    await traceByMaterialLot(lotNumber);
+                    await traceByMaterialLot(lotNumber, powderName);
                 }
 
             } catch (error) {
@@ -3558,9 +3563,13 @@ function updateLanguage() {
             }
         }
 
-        async function traceByMaterialLot(materialLot) {
+        async function traceByMaterialLot(materialLot, powderName = '') {
             try {
-                const response = await fetch(`${API_BASE}/api/traceability/material/${encodeURIComponent(materialLot)}`);
+                let apiUrl = `${API_BASE}/api/traceability/material/${encodeURIComponent(materialLot)}`;
+                if (powderName) {
+                    apiUrl += `?powder_name=${encodeURIComponent(powderName)}`;
+                }
+                const response = await fetch(apiUrl);
                 const data = await response.json();
 
                 if (!data.success) {

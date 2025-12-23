@@ -495,6 +495,18 @@
                 <div class="card-title" data-i18n="traceabilitySearch">추적성 검색</div>
                 <form id="traceabilityForm" style="display: flex; gap: 10px; align-items: end;">
                     <div class="form-group" style="flex: 1;">
+                        <label data-i18n="productNameLabel">제품명</label>
+                        <select id="traceabilityPowderName" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">선택 안함 (배합 LOT만 검색)</option>
+                            <option value="순철분말">순철분말 (수입검사분말)</option>
+                            <option value="구리분말">구리분말 (수입검사분말)</option>
+                            <option value="흑연분말">흑연분말 (수입검사분말)</option>
+                            <option value="배합분말-A">배합분말-A (배합분말)</option>
+                            <option value="배합분말-B">배합분말-B (배합분말)</option>
+                            <option value="배합분말-C">배합분말-C (배합분말)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
                         <label data-i18n="lotNumberLabel">LOT 번호</label>
                         <input type="text" id="traceabilityLotNumber" required placeholder="배합 LOT 또는 원재료 LOT 입력">
                     </div>
