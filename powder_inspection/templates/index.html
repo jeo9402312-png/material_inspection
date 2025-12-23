@@ -789,8 +789,28 @@
                     </form>
                 </div>
 
-                <!-- 분말 목록 -->
-                <div id="powderList"></div>
+                <!-- 분말 관리: 좌측 리스트 + 우측 세부사양 -->
+                <div class="admin-powder-layout">
+                    <div class="powder-list-column">
+                        <button class="btn secondary" style="width:100%; margin-bottom:10px;" onclick="showAddPowderForm()">+ 새분말추가</button>
+                        <div id="powderNamesList" class="vertical-list"></div>
+                    </div>
+                    <div class="powder-spec-column">
+                        <div id="powderSpecHeader" class="spec-header">
+                            <div id="powderSpecTitle" style="font-weight:700;">분말 사양</div>
+                            <div class="spec-actions">
+                                <button class="btn secondary" id="specEditBtn" style="margin-right:6px;">수정</button>
+                                <button class="btn danger" id="specDeleteBtn">삭제</button>
+                            </div>
+                        </div>
+                        <div id="powderSpecDetail" class="scrollable-list" style="margin-top:12px; padding:12px; background:#fff; border-radius:6px; border:1px solid #eee;">
+                            <div class="empty-message">왼쪽에서 분말명을 선택하세요</div>
+                        </div>
+
+                        <!-- 편집/추가 폼은 숨겨진 상태로 유지되며, 수정 클릭 시 보여짐 -->
+                        <!-- 기존 powderFormContainer가 우측 폼으로 사용됩니다. -->
+                    </div>
+                </div>
             </div>
             </div>
             <!-- 탭 1 끝 -->

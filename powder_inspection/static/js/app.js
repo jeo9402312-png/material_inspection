@@ -1070,50 +1070,100 @@ function updateLanguage() {
             try {
                 const response = await fetch(`${API_BASE}/api/admin/powder-spec`);
                 const data = await response.json();
-
-                const listDiv = document.getElementById('powderList');
+                const namesDiv = document.getElementById('powderNamesList');
 
                 if (data.success && data.data.length > 0) {
-                    let html = `<table><tr><th>${t('category')}</th><th>${t('powderName')}</th><th>${t('configuredItems')}</th><th>${t('action')}</th></tr>`;
-
+                    namesDiv.innerHTML = '';
                     data.data.forEach(spec => {
-                        const categoryBadge = spec.category === 'incoming'
-                            ? `<span class="badge" style="background: #2196F3;">${t('incoming')}</span>`
-                            : `<span class="badge" style="background: #FF9800;">${t('mixing')}</span>`;
+                        const item = document.createElement('div');
+                        item.className = 'powder-item';
+                        item.dataset.specId = spec.id;
+                        item.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">` +
+                            `<div><strong>${spec.powder_name}</strong><div style="font-size:0.85em;color:#666;">${spec.category === 'incoming' ? t('incoming') : t('mixing')}</div></div>` +
+                            `</div>`;
 
-                        const activeItems = [];
-                        if (spec.flow_rate_type !== '비활성' && (spec.flow_rate_min || spec.flow_rate_max)) activeItems.push(t('flowRate'));
-                        if (spec.apparent_density_type !== '비활성' && (spec.apparent_density_min || spec.apparent_density_max)) activeItems.push(t('apparentDensity'));
-                        if (spec.c_content_type !== '비활성' && (spec.c_content_min || spec.c_content_max)) activeItems.push(t('cContent'));
-                        if (spec.cu_content_type !== '비활성' && (spec.cu_content_min || spec.cu_content_max)) activeItems.push(t('cuContent'));
-                        if (spec.moisture_type !== '비활성' && (spec.moisture_min || spec.moisture_max)) activeItems.push(t('moisture'));
-                        if (spec.ash_type !== '비활성' && (spec.ash_min || spec.ash_max)) activeItems.push(t('ash'));
-                        if (spec.sinter_change_rate_type !== '비활성' && (spec.sinter_change_rate_min || spec.sinter_change_rate_max)) activeItems.push(t('sinterChangeRate'));
-                        if (spec.sinter_strength_type !== '비활성' && (spec.sinter_strength_min || spec.sinter_strength_max)) activeItems.push(t('sinterStrength'));
-                        if (spec.forming_strength_type !== '비활성' && (spec.forming_strength_min || spec.forming_strength_max)) activeItems.push(t('formingStrength'));
-                        if (spec.forming_load_type !== '비활성' && (spec.forming_load_min || spec.forming_load_max)) activeItems.push(t('formingLoad'));
-                        if (spec.particle_size_type !== '비활성') activeItems.push(t('particleSize'));
+                        item.addEventListener('click', () => {
+                            document.querySelectorAll('.vertical-list .powder-item').forEach(el => el.classList.remove('active'));
+                            item.classList.add('active');
+                            showPowderSpecDetail(spec.id);
+                        });
 
-                        html += `
-                            <tr>
-                                <td>${categoryBadge}</td>
-                                <td><strong>${spec.powder_name}</strong></td>
-                                <td>${activeItems.join(', ') || t('noConfig')}</td>
-                                <td>
-                                    <button class="btn secondary" onclick="editPowderSpec(${spec.id})" style="padding: 8px 12px; margin-right: 5px;">${t('edit')}</button>
-                                    <button class="btn danger" onclick="deletePowderSpec(${spec.id}, '${spec.powder_name}')" style="padding: 8px 12px;">${t('delete')}</button>
-                                </td>
-                            </tr>
-                        `;
+                        namesDiv.appendChild(item);
                     });
 
-                    html += '</table>';
-                    listDiv.innerHTML = html;
+                    // 자동 선택
+                    const first = namesDiv.querySelector('.powder-item');
+                    if (first) {
+                        first.classList.add('active');
+                        const firstId = first.dataset.specId;
+                        showPowderSpecDetail(parseInt(firstId));
+                    }
                 } else {
-                    listDiv.innerHTML = `<div class="empty-message">${t('noPowders')}</div>`;
+                    namesDiv.innerHTML = `<div class="empty-message">${t('noPowders')}</div>`;
+                    const detailDiv = document.getElementById('powderSpecDetail');
+                    if (detailDiv) detailDiv.innerHTML = `<div class="empty-message">${t('noPowders')}</div>`;
                 }
             } catch (error) {
                 console.error('분말 목록 로딩 실패:', error);
+            }
+        }
+
+        let selectedPowderSpecId = null;
+
+        async function showPowderSpecDetail(specId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/powder-spec`);
+                const data = await response.json();
+                if (!data.success) return;
+
+                const spec = data.data.find(s => s.id === specId);
+                if (!spec) return;
+
+                selectedPowderSpecId = spec.id;
+
+                const activeItems = [];
+                if (spec.flow_rate_type !== '비활성' && (spec.flow_rate_min || spec.flow_rate_max)) activeItems.push(t('flowRate') + `: ${spec.flow_rate_min || '-'}~${spec.flow_rate_max || '-'}`);
+                if (spec.apparent_density_type !== '비활성' && (spec.apparent_density_min || spec.apparent_density_max)) activeItems.push(t('apparentDensity'));
+                if (spec.c_content_type !== '비활성' && (spec.c_content_min || spec.c_content_max)) activeItems.push(t('cContent'));
+                if (spec.cu_content_type !== '비활성' && (spec.cu_content_min || spec.cu_content_max)) activeItems.push(t('cuContent'));
+                if (spec.moisture_type !== '비활성' && (spec.moisture_min || spec.moisture_max)) activeItems.push(t('moisture'));
+                if (spec.ash_type !== '비활성' && (spec.ash_min || spec.ash_max)) activeItems.push(t('ash'));
+                if (spec.sinter_change_rate_type !== '비활성' && (spec.sinter_change_rate_min || spec.sinter_change_rate_max)) activeItems.push(t('sinterChangeRate'));
+                if (spec.sinter_strength_type !== '비활성' && (spec.sinter_strength_min || spec.sinter_strength_max)) activeItems.push(t('sinterStrength'));
+                if (spec.forming_strength_type !== '비활성' && (spec.forming_strength_min || spec.forming_strength_max)) activeItems.push(t('formingStrength'));
+                if (spec.forming_load_type !== '비활성' && (spec.forming_load_min || spec.forming_load_max)) activeItems.push(t('formingLoad'));
+                if (spec.particle_size_type !== '비활성') activeItems.push(t('particleSize'));
+
+                const detailDiv = document.getElementById('powderSpecDetail');
+                let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">`;
+                html += `<div style="padding:12px;background:#fafafa;border-radius:6px;">`;
+                html += `<h4 style="margin-top:0;">${spec.powder_name}</h4>`;
+                html += `<p style="color:#666;margin:6px 0;">${spec.category === 'incoming' ? t('incoming') : t('mixing')}</p>`;
+                html += `<p style="margin-top:8px;font-weight:600;">설정된 항목</p>`;
+                html += `<ul style="margin-top:8px;padding-left:16px;color:#444;">`;
+                if (activeItems.length > 0) activeItems.forEach(i => { html += `<li style="margin-bottom:6px;">${i}</li>`; });
+                else html += `<li>${t('noConfig')}</li>`;
+                html += `</ul></div>`;
+
+                html += `<div style="padding:12px;background:#fff;border-radius:6px;border:1px solid #f0f0f0;">`;
+                html += `<h4 style="margin-top:0;">세부 값</h4>`;
+                html += `<div style="font-size:0.95em;color:#333;">`;
+                html += `<p>Flow rate: ${spec.flow_rate_min || '-'} ~ ${spec.flow_rate_max || '-' } (${spec.flow_rate_type || '-'})</p>`;
+                html += `<p>Apparent density: ${spec.apparent_density_min || '-'} ~ ${spec.apparent_density_max || '-'} (${spec.apparent_density_type || '-'})</p>`;
+                html += `<p>C content: ${spec.c_content_min || '-'} ~ ${spec.c_content_max || '-'} (${spec.c_content_type || '-'})</p>`;
+                html += `<p>Cu content: ${spec.cu_content_min || '-'} ~ ${spec.cu_content_max || '-'} (${spec.cu_content_type || '-'})</p>`;
+                html += `</div></div>`;
+                html += `</div>`;
+
+                detailDiv.innerHTML = html;
+
+                const editBtn = document.getElementById('specEditBtn');
+                const delBtn = document.getElementById('specDeleteBtn');
+                if (editBtn) editBtn.onclick = () => editPowderSpec(spec.id);
+                if (delBtn) delBtn.onclick = () => deletePowderSpec(spec.id, spec.powder_name);
+
+            } catch (error) {
+                console.error('사양 상세 로딩 실패:', error);
             }
         }
 
