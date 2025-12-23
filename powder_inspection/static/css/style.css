@@ -498,4 +498,72 @@ table tbody tr:hover {
 .status-badge.pending {
     background: #f8d7da;
     color: #721c24;
+
+/* 스크롤 가능한 리스트 */
+.scrollable-list {
+    max-height: calc(100vh - 450px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+/* 스크롤 가능한 테이블 컨테이너 */
+.scrollable-table-container {
+    max-height: calc(100vh - 450px);
+    overflow-y: auto;
+    overflow-x: auto;
+    border-radius: 6px;
+}
+
+/* 컴팩트 폼 그룹 (간격 줄임) */
+.compact-form-group {
+    margin-bottom: 8px;
+}
+
+/* 배합작업지시서 생성 폼 카드 */
+.blending-order-form-card {
+    padding: 18px 25px;
+}
+
+.blending-order-form-card form {
+    margin-bottom: 0;
+}
+
+/* 배합작업지시서 목록 카드 */
+.blending-order-list-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.blending-order-list-card .scrollable-list {
+    flex: 1;
+    max-height: none;
+}
+
+/* 커스텀 스크롤바 스타일 */
+.scrollable-list::-webkit-scrollbar,
+.scrollable-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.scrollable-list::-webkit-scrollbar-track,
+.scrollable-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb,
+.scrollable-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb:hover,
+.scrollable-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
 }
