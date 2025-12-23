@@ -1109,15 +1109,44 @@ function updateLanguage() {
         // 분말 사양 관리
         // ============================================
 
-        async function loadPowderSpecs() {
+        async function loadPowderSpecs(filterCategory = '') {
             try {
                 const response = await fetch(`${API_BASE}/api/admin/powder-spec`);
                 const data = await response.json();
                 const namesDiv = document.getElementById('powderNamesList');
-
                 if (data.success && data.data.length > 0) {
                     namesDiv.innerHTML = '';
-                    data.data.forEach(spec => {
+
+                    let specs = data.data;
+
+                    // 배합 분말 모드인 경우, 레시피에 등록된 제품명과 교차검증하여 표시
+                    if (filterCategory === 'mixing') {
+                        try {
+                            const r = await fetch(`${API_BASE}/api/admin/recipes`);
+                            const rdata = await r.json();
+                            if (rdata.success && rdata.data.length > 0) {
+                                const productNames = new Set(rdata.data.map(p => p.product_name));
+                                specs = specs.filter(s => productNames.has(s.powder_name));
+                            } else {
+                                // 레시피가 없으면 빈 목록
+                                specs = [];
+                            }
+                        } catch (err) {
+                            console.error('레시피 로딩 실패:', err);
+                            specs = [];
+                        }
+                    } else if (filterCategory) {
+                        specs = specs.filter(s => s.category === filterCategory);
+                    }
+
+                    if (specs.length === 0) {
+                        namesDiv.innerHTML = `<div class="empty-message">${t('noPowders')}</div>`;
+                        const detailDiv = document.getElementById('powderSpecDetail');
+                        if (detailDiv) detailDiv.innerHTML = `<div class="empty-message">${t('noPowders')}</div>`;
+                        return;
+                    }
+
+                    specs.forEach(spec => {
                         const item = document.createElement('div');
                         item.className = 'powder-item';
                         item.dataset.specId = spec.id;
