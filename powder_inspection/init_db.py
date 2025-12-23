@@ -9,13 +9,17 @@ import os
 def init_database():
     """데이터베이스 초기화 및 테이블 생성"""
 
+    # 스크립트 디렉토리 기반으로 데이터베이스 경로 설정
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(script_dir, 'database.db')
+
     # 기존 DB 파일 삭제 (초기화)
-    if os.path.exists('database.db'):
+    if os.path.exists(db_path):
         print("기존 데이터베이스 삭제 중...")
-        os.remove('database.db')
+        os.remove(db_path)
 
     # 데이터베이스 연결
-    conn = sqlite3.connect('database.db', timeout=30.0)
+    conn = sqlite3.connect(db_path, timeout=30.0)
     cursor = conn.cursor()
 
     # WAL 모드 활성화 (동시성 향상)
@@ -514,7 +518,7 @@ def init_database():
     print(f"배합 규격서: {cursor.fetchone()[0]}개")
 
     conn.close()
-    print("\n데이터베이스 파일: database.db")
+    print("\n데이터베이스 파일: " + db_path)
 
 if __name__ == '__main__':
     init_database()
