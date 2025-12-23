@@ -3748,6 +3748,12 @@ function updateLanguage() {
         function loadBlendingOrdersPage() {
             // 제품 목록 로드 (작업지시서 생성용)
             loadOrderProductList();
+            // 작업일자 기본값 설정 (오늘 날짜)
+            const today = new Date().toISOString().split('T')[0];
+            const orderDateInput = document.getElementById('orderDate');
+            if (orderDateInput) {
+                orderDateInput.value = today;
+            }
             // 작업지시서 목록 로드
             loadBlendingOrders();
         }
