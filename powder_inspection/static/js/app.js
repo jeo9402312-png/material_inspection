@@ -2661,9 +2661,34 @@ function updateLanguage() {
                 const isCompleted = !!existingInput;
 
                 // 허용 범위 계산
-                // calculated_weight는 백엔드에서 Main 분말 중량을 고려하여 계산됨
-                const targetWeight = recipe.calculated_weight;
+                // 서버에서 제공된 calculated_weight가 없으면 클라이언트에서 배합중량 기반으로 계산
+                let targetWeight = recipe.calculated_weight || 0;
                 const tolerancePercent = recipe.tolerance_percent;
+
+                if (!targetWeight || targetWeight === 0) {
+                    const blendingWeight = currentBlendingWork.target_total_weight || 0;
+                    const mainRecipesForCalc = currentBlendingRecipes.filter(r => r.is_main);
+
+                    if (mainRecipesForCalc.length > 0) {
+                        const totalMainRatio = mainRecipesForCalc.reduce((s, r) => s + r.ratio, 0);
+
+                        if (recipe.is_main) {
+                            if (mainRecipesForCalc.length === 1) {
+                                targetWeight = blendingWeight;
+                            } else if (totalMainRatio > 0) {
+                                targetWeight = blendingWeight * (recipe.ratio / totalMainRatio);
+                            }
+                        } else {
+                            if (totalMainRatio > 0) {
+                                targetWeight = blendingWeight * (recipe.ratio / totalMainRatio);
+                            }
+                        }
+                    } else {
+                        // Main 분말이 없는 경우: 배합중량 비율(%)로 계산
+                        targetWeight = blendingWeight * (recipe.ratio / 100);
+                    }
+                }
+
                 const minWeight = (targetWeight * (1 - tolerancePercent / 100)).toFixed(2);
                 const maxWeight = (targetWeight * (1 + tolerancePercent / 100)).toFixed(2);
 
