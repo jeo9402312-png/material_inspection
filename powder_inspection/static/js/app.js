@@ -3664,7 +3664,11 @@ function updateLanguage() {
                             <td>${prod}</td>
                             <td>${total}</td>
                             <td>${prog}%</td>
-                            <td>-</td>
+                            <td>
+                                <button class="btn primary" onclick="startBlendingFromOrder(${order.id}, '${escapeHtml(order.product_name || '')}', '${escapeHtml(order.work_order_number || '')}')" style="padding:6px 10px;">
+                                    작업시작하기
+                                </button>
+                            </td>
                         </tr>`;
                 });
 
