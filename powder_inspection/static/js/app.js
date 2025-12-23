@@ -3233,41 +3233,46 @@ function updateLanguage() {
                 }
 
                 const labelDiv = document.createElement('div');
-                labelDiv.style.width = '92mm';
-                labelDiv.style.height = '92mm';
+                labelDiv.style.width = '100mm';
+                labelDiv.style.height = '100mm';
                 labelDiv.style.boxSizing = 'border-box';
                 labelDiv.style.background = 'white';
-                labelDiv.style.border = '1px solid #ddd';
+                labelDiv.style.border = '2px solid #000';
                 labelDiv.style.display = 'flex';
                 labelDiv.style.flexDirection = 'column';
                 labelDiv.style.justifyContent = 'space-between';
-                labelDiv.style.padding = '8px';
-                labelDiv.style.borderRadius = '6px';
+                labelDiv.style.padding = '6px';
+                labelDiv.style.borderRadius = '4px';
+                labelDiv.style.position = 'relative';
 
                 // 날짜 (작업 완료시엔 서버의 end_time을 사용하거나 현재 시각 사용)
                 const dateStr = (work.end_time) ? new Date(work.end_time).toLocaleString('ko-KR') : new Date().toLocaleString('ko-KR');
 
                 const company = translations[currentLang].companyName || 'Johnson Electric Operations';
-                const product = work.product_name || work.product_name || '';
+                const product = work.product_name || '';
                 const batchLot = work.batch_lot || '';
 
                 const infoHtml = `
-                    <div class="label-content">
-                        <div style="text-align:center; width:100%;">
-                            <div style="font-weight:700; font-size:14px;">${company}</div>
-                            <div style="font-weight:600; font-size:13px; margin-top:6px;">${product}</div>
-                            <div style="font-size:12px; color:#444; margin-top:4px;">LOT: ${batchLot}</div>
+                    <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+                        <!-- 상단: 회사명 (왼쪽 상단) 및 날짜(오른쪽 상단) -->
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+                            <div style="font-weight:700; font-size:12px; text-align:left;">${company}</div>
+                            <div style="font-size:11px; color:#222; text-align:right;">${translations[currentLang].labelDate || '작업날짜'}: ${dateStr}</div>
                         </div>
 
-                        <div style="display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
-                            <svg id="label-barcode-${i}"></svg>
-                            <div style="font-size:11px; color:#222;">${translations[currentLang].labelDate || '작업날짜'}: ${dateStr}</div>
-                            <div style="font-size:12px; color:#222; font-weight:600;">${translations[currentLang].labelPack || 'Pack'}: ${i}/${totalPacks}</div>
-                            <div style="font-size:12px; color:#222;">${translations[currentLang].labelWeight || '중량'}: ${formatNumber(packWeight)} kg</div>
+                        <!-- 중앙: 분말명 (크게) -->
+                        <div style="display:flex; align-items:center; justify-content:center; width:100%; flex:1;">
+                            <div style="font-weight:800; font-size:36px; text-align:center; line-height:1;">${product}</div>
                         </div>
 
-                        <div style="display:flex; gap:6px; justify-content:center; width:100%;">
-                            <button class="btn" onclick="printLabel(${i})">${translations[currentLang].printLabel || '인쇄'}</button>
+                        <!-- 하단: 바코드, LOT, Pack, Weight -->
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;">
+                            <svg id="label-barcode-${i}" style="width:100%; height:72px; display:block;"></svg>
+                            <div style="font-size:24px; color:#222; font-weight:700;">LOT: ${batchLot}</div>
+                            <div style="font-size:12px; color:#222; font-weight:600;">${translations[currentLang].labelPack || 'Pack'}: ${i}/${totalPacks} • ${translations[currentLang].labelWeight || '중량'}: ${formatNumber(packWeight)} kg</div>
+                            <div style="display:flex; gap:6px; justify-content:center; width:100%;">
+                                <button class="btn" onclick="printLabel(${i})">${translations[currentLang].printLabel || '인쇄'}</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -3282,7 +3287,9 @@ function updateLanguage() {
                 try {
                     const svgEl = labelDiv.querySelector(`#label-barcode-${i}`);
                     if (svgEl && typeof JsBarcode === 'function') {
-                        JsBarcode(svgEl, barcodeValue, { format: 'CODE128', width: 1, height: 40, displayValue: false });
+                        JsBarcode(svgEl, barcodeValue, { format: 'CODE128', width: 2, height: 72, displayValue: true, fontSize: 12, margin: 0 });
+                    } else if (svgEl) {
+                        svgEl.innerHTML = `<text x="0" y="20">${barcodeValue}</text>`;
                     }
                 } catch (err) {
                     console.error('바코드 렌더링 오류:', err);
