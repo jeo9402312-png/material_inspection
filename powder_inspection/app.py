@@ -2340,32 +2340,41 @@ def save_material_input():
         with closing(get_db()) as conn:
             cursor = conn.cursor()
 
-            # 1. 이종분말 검증 (material_lot의 분말명이 recipe의 분말명과 일치하는지)
+            # 1. 이종분말 검증 (제품명과 LOT번호 둘 다 비교하여 검증)
             # 복수 LOT 지원: 쉼표로 구분된 LOT를 분리하여 검증
             material_lots = [lot.strip() for lot in data['material_lot'].split(',')]
 
             for lot in material_lots:
+                # 제품명과 LOT 번호로 함께 조회 (lot번호가 동일해도 제품명이 다르면 구분)
                 cursor.execute('''
                     SELECT powder_name FROM inspection_result
-                    WHERE lot_number = ? AND category = 'incoming'
-                ''', (lot,))
+                    WHERE lot_number = ? AND powder_name = ? AND category = 'incoming'
+                ''', (lot, data['powder_name']))
 
                 lot_row = cursor.fetchone()
 
                 if not lot_row:
-                    return jsonify({
-                        'success': False,
-                        'message': f'LOT {lot}의 수입검사 기록을 찾을 수 없습니다.'
-                    })
-
-                actual_powder = lot_row[0]
-
-                if actual_powder != data['powder_name']:
-                    return jsonify({
-                        'success': False,
-                        'message': f'이종분말 검출! 투입하려는 분말({data["powder_name"]})과 LOT {lot}의 실제 분말({actual_powder})이 다릅니다.',
-                        'is_wrong_material': True
-                    })
+                    # 먼저 LOT가 존재하는지 확인
+                    cursor.execute('''
+                        SELECT powder_name FROM inspection_result
+                        WHERE lot_number = ? AND category = 'incoming'
+                    ''', (lot,))
+                    
+                    check_row = cursor.fetchone()
+                    
+                    if not check_row:
+                        return jsonify({
+                            'success': False,
+                            'message': f'LOT {lot}의 수입검사 기록을 찾을 수 없습니다.'
+                        })
+                    else:
+                        # LOT는 있지만 제품명이 다른 경우
+                        actual_powder = check_row[0]
+                        return jsonify({
+                            'success': False,
+                            'message': f'이종분말 검출! 투입하려는 분말({data["powder_name"]})과 LOT {lot}의 실제 분말({actual_powder})이 다릅니다.',
+                            'is_wrong_material': True
+                        })
 
             # 2. 중량 편차 계산
             target_weight = float(data['target_weight'])
@@ -2550,6 +2559,7 @@ def get_blending_works():
 @app.route('/api/traceability/batch/<batch_lot>', methods=['GET'])
 def trace_by_batch_lot(batch_lot):
     """배합 LOT로 추적 (Backward Traceability): 배합 → 원재료 → 수입검사"""
+    product_name = request.args.get('product_name', '')
     try:
         with closing(get_db()) as conn:
             cursor = conn.cursor()
@@ -2579,14 +2589,14 @@ def trace_by_batch_lot(batch_lot):
 
             material_inputs = [dict_from_row(row) for row in cursor.fetchall()]
 
-            # 3. 각 원재료의 수입검사 결과 조회
+            # 3. 각 원재료의 수입검사 결과 조회 (제품명과 lot번호로 조회)
             for material in material_inputs:
                 cursor.execute('''
                     SELECT powder_name, lot_number, inspection_type, inspector,
                            inspection_time, final_result
                     FROM inspection_result
-                    WHERE lot_number = ? AND category = 'incoming'
-                ''', (material['material_lot'],))
+                    WHERE lot_number = ? AND powder_name = ? AND category = 'incoming'
+                ''', (material['material_lot'], material['powder_name']))
 
                 inspection_row = cursor.fetchone()
                 if inspection_row:
@@ -2607,28 +2617,42 @@ def trace_by_batch_lot(batch_lot):
 
 @app.route('/api/traceability/material/<material_lot>', methods=['GET'])
 def trace_by_material_lot(material_lot):
-    """원재료 LOT로 추적 (Forward Traceability): 수입검사 → 사용된 배합들"""
+    """원재료 LOT와 분말명으로 추적 (Forward Traceability): 수입검사 → 사용된 배합들"""
+    powder_name = request.args.get('powder_name', '')
     try:
         with closing(get_db()) as conn:
             cursor = conn.cursor()
 
-            # 1. 수입검사 결과 조회
-            cursor.execute('''
-                SELECT * FROM inspection_result
-                WHERE lot_number = ? AND category = 'incoming'
-            ''', (material_lot,))
+            # 1. 수입검사 결과 조회 (제품명과 lot번호로 조회)
+            if powder_name:
+                cursor.execute('''
+                    SELECT * FROM inspection_result
+                    WHERE lot_number = ? AND powder_name = ? AND category = 'incoming'
+                ''', (material_lot, powder_name))
+            else:
+                # powder_name이 없으면 lot번호만으로 검색
+                cursor.execute('''
+                    SELECT * FROM inspection_result
+                    WHERE lot_number = ? AND category = 'incoming'
+                ''', (material_lot,))
 
             inspection_row = cursor.fetchone()
 
             if not inspection_row:
-                return jsonify({
-                    'success': False,
-                    'message': f'원재료 LOT {material_lot}의 수입검사 기록을 찾을 수 없습니다.'
-                })
+                if powder_name:
+                    return jsonify({
+                        'success': False,
+                        'message': f'분말명({powder_name})과 LOT {material_lot}의 수입검사 기록을 찾을 수 없습니다.'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f'원재료 LOT {material_lot}의 수입검사 기록을 찾을 수 없습니다.'
+                    })
 
             inspection = dict_from_row(inspection_row)
 
-            # 2. 이 LOT이 사용된 모든 배합 작업 조회
+            # 2. 이 LOT과 분말명이 사용된 모든 배합 작업 조회
             cursor.execute('''
                 SELECT
                     mi.*,
@@ -2643,9 +2667,9 @@ def trace_by_material_lot(material_lot):
                     bw.end_time
                 FROM material_input mi
                 JOIN blending_work bw ON mi.blending_work_id = bw.id
-                WHERE mi.material_lot = ?
+                WHERE mi.material_lot = ? AND mi.powder_name = ?
                 ORDER BY bw.start_time DESC
-            ''', (material_lot,))
+            ''', (material_lot, powder_name))
 
             usages = [dict_from_row(row) for row in cursor.fetchall()]
 
@@ -2662,9 +2686,10 @@ def trace_by_material_lot(material_lot):
 
 @app.route('/api/traceability/search', methods=['GET'])
 def search_traceability():
-    """통합 추적성 검색"""
+    """통합 추적성 검색 (분말명과 LOT번호로 검색)"""
     try:
         lot_number = request.args.get('lot_number', '')
+        powder_name = request.args.get('powder_name', '')
 
         if not lot_number:
             return jsonify({'success': False, 'message': 'LOT 번호를 입력하세요.'})
@@ -2675,6 +2700,7 @@ def search_traceability():
             result = {
                 'success': True,
                 'lot_number': lot_number,
+                'powder_name': powder_name,
                 'found_as': []
             }
 
@@ -2687,20 +2713,32 @@ def search_traceability():
             if cursor.fetchone()[0] > 0:
                 result['found_as'].append('batch_lot')
 
-            # 2. 원재료 LOT로 검색
-            cursor.execute('''
-                SELECT COUNT(*) FROM inspection_result
-                WHERE lot_number = ? AND category = 'incoming'
-            ''', (lot_number,))
+            # 2. 원재료 LOT로 검색 (분말명도 함께 검색)
+            if powder_name:
+                cursor.execute('''
+                    SELECT COUNT(*) FROM inspection_result
+                    WHERE lot_number = ? AND powder_name = ? AND category = 'incoming'
+                ''', (lot_number, powder_name))
+            else:
+                cursor.execute('''
+                    SELECT COUNT(*) FROM inspection_result
+                    WHERE lot_number = ? AND category = 'incoming'
+                ''', (lot_number,))
 
             if cursor.fetchone()[0] > 0:
                 result['found_as'].append('material_lot')
 
             if not result['found_as']:
-                return jsonify({
-                    'success': False,
-                    'message': f'LOT {lot_number}를 찾을 수 없습니다.'
-                })
+                if powder_name:
+                    return jsonify({
+                        'success': False,
+                        'message': f'분말명({powder_name})과 LOT {lot_number}를 찾을 수 없습니다.'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f'LOT {lot_number}를 찾을 수 없습니다.'
+                    })
 
             return jsonify(result)
 
