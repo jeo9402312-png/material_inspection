@@ -2204,7 +2204,7 @@ function updateLanguage() {
             const workOrderNumber = sessionStorage.getItem('blendingOrderNumber');
 
             if (orderId && productName && workOrderNumber) {
-                // 제품명 자동 선택
+                // 제품명 자동 선택 및 고정(선택 불가)
                 const productSelect = document.getElementById('blendingProductName');
                 if (productSelect) {
                     // 옵션에서 일치하는 값이 있으면 선택
@@ -2221,7 +2221,12 @@ function updateLanguage() {
                         productSelect.value = productName;
                     }
 
-                    // change 이벤트 트리거 (다른 핸들러들도 반응하게끔)
+                    // 제품명을 고정하여 선택 기능 제거
+                    productSelect.disabled = true;
+                    productSelect.setAttribute('data-fixed', 'true');
+                    productSelect.style.background = '#f0f0f0';
+
+                    // change 이벤트 트리거 (레시피 로드)
                     productSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
                     // 제품 선택 시 Recipe 자동 로드 (안전하게 호출)
@@ -2261,6 +2266,11 @@ function updateLanguage() {
                 const data = await response.json();
 
                 const select = document.getElementById('blendingProductName');
+                // 제품 목록 로드 시 잠금 해제(직접 선택 가능하게)
+                select.disabled = false;
+                select.removeAttribute('data-fixed');
+                select.style.background = '';
+
                 select.innerHTML = '<option value="">선택하세요</option>';
 
                 if (data.success && data.data.length > 0) {
@@ -2402,8 +2412,8 @@ function updateLanguage() {
             container.innerHTML = html;
             document.getElementById('recipePreview').style.display = 'block';
 
-            // Main 분말 중량 선택 UI 생성
-            renderMainPowderWeightSelectors(mainRecipes);
+            // Main 분말 중량은 작업지시서 화면에서 입력하지 않도록 변경됨
+            // 필요한 경우 배합 시작 후 원재료 투입 화면에서 톤 단위로 선택하도록 처리합니다.
         }
 
         function renderMainPowderWeightSelectors(mainRecipes) {
@@ -2524,28 +2534,17 @@ function updateLanguage() {
                 return;
             }
 
-            // Main 분말 중량 검증
+            // Main 분말 중량은 작업지시서 화면에서 입력하지 않도록 변경됨.
+            // 배합 작업 시작 후 원재료 투입 화면에서 Main 분말을 1~5 ton 중 선택할 수 있습니다.
             const mainRecipes = currentRecipe.filter(r => r.is_main);
             let mainPowderWeights = {};
-            let totalMainWeight = 0;
 
+            // 만약 start 화면에 값이 존재하면 전송(선택적)
             for (let i = 0; i < mainRecipes.length; i++) {
                 const select = document.getElementById(`mainPowderWeight_${i}`);
-                if (!select || !select.value) {
-                    alert(`${mainRecipes[i].powder_name}의 중량을 선택해주세요.`);
-                    return;
-                }
-                const weight = parseFloat(select.value);
-                mainPowderWeights[mainRecipes[i].powder_name] = weight;
-                totalMainWeight += weight;
-            }
-
-            // Main 분말이 2개 이상일 때 합계 검증
-            if (mainRecipes.length > 1) {
-                const blendingWeight = parseFloat(targetWeight);
-                if (totalMainWeight !== blendingWeight) {
-                    alert(`Main 분말 중량의 합계(${formatNumber(totalMainWeight)} kg)가 배합중량(${formatNumber(blendingWeight)} kg)과 일치하지 않습니다.\n\n각 Main 분말의 중량을 조정해주세요.`);
-                    return;
+                if (select && select.value) {
+                    const weight = parseFloat(select.value);
+                    if (!isNaN(weight)) mainPowderWeights[mainRecipes[i].powder_name] = weight;
                 }
             }
 
@@ -2717,11 +2716,11 @@ function updateLanguage() {
                                 onchange="checkWeightJudgement('${recipe.id}')"
                                 style="width:100%; padding: 10px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 5px; text-align: center;">
                                 <option value="">중량 선택</option>
-                                <option value="1000" ${mainWeight === 1000 ? 'selected' : ''}>1 ton (1,000 kg)</option>
-                                <option value="2000" ${mainWeight === 2000 ? 'selected' : ''}>2 ton (2,000 kg)</option>
-                                <option value="3000" ${mainWeight === 3000 ? 'selected' : ''}>3 ton (3,000 kg)</option>
-                                <option value="4000" ${mainWeight === 4000 ? 'selected' : ''}>4 ton (4,000 kg)</option>
-                                <option value="5000" ${mainWeight === 5000 ? 'selected' : ''}>5 ton (5,000 kg)</option>
+                                <option value="1000" ${String(mainWeight) === '1000' ? 'selected' : ''}>1 ton (1,000 kg)</option>
+                                <option value="2000" ${String(mainWeight) === '2000' ? 'selected' : ''}>2 ton (2,000 kg)</option>
+                                <option value="3000" ${String(mainWeight) === '3000' ? 'selected' : ''}>3 ton (3,000 kg)</option>
+                                <option value="4000" ${String(mainWeight) === '4000' ? 'selected' : ''}>4 ton (4,000 kg)</option>
+                                <option value="5000" ${String(mainWeight) === '5000' ? 'selected' : ''}>5 ton (5,000 kg)</option>
                             </select>
                         </td>
                     `;
@@ -3736,7 +3735,21 @@ function updateLanguage() {
                         }
                     }
                     if (!found) productSelect.value = order.product_name;
+
+                    // 제품명을 작업지시서 기준으로 고정(선택 불가)
+                    productSelect.disabled = true;
+                    productSelect.setAttribute('data-fixed', 'true');
+                    productSelect.style.background = '#f0f0f0';
+
+                    // change 이벤트 트리거 및 Recipe 로드
                     productSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    // 세션에 작업지시 정보 저장(다른 경로에서 입장 시 활용)
+                    try {
+                        sessionStorage.setItem('blendingOrderId', String(order.id));
+                        sessionStorage.setItem('blendingOrderProduct', String(order.product_name));
+                        sessionStorage.setItem('blendingOrderNumber', String(order.work_order_number || ''));
+                    } catch (e) { /* noop */ }
                 }
 
                 // 작업지시번호
