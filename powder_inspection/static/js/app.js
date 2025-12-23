@@ -3070,6 +3070,18 @@ function updateLanguage() {
 
                 if (data.success) {
                     alert('배합 작업이 완료되었습니다!');
+                    // 완료 후 관련 목록을 즉시 갱신하여 진도표기가 반영되도록 함
+                    try {
+                        loadBlendingWorks();
+                    } catch (e) { /* noop */ }
+                    try {
+                        if (typeof loadBlendingOrdersPage === 'function') loadBlendingOrdersPage();
+                    } catch (e) { /* noop */ }
+                    try {
+                        if (typeof loadBlendingOrdersForBlending === 'function') loadBlendingOrdersForBlending();
+                    } catch (e) { /* noop */ }
+
+                    // 대시보드로 이동
                     showPage('dashboard');
                 } else {
                     alert('완료 처리 실패: ' + data.message);
@@ -3579,19 +3591,8 @@ function updateLanguage() {
                     const progressPercent = order.progress_percent || 0;
                     const isCompleted = order.status === 'completed' || progressPercent >= 100;
 
-                    // 진도율 프로그레스바
-                    let progressBarColor = '#4CAF50';
-                    if (progressPercent < 30) progressBarColor = '#f44336';
-                    else if (progressPercent < 70) progressBarColor = '#FF9800';
-
-                    const progressBar = `
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="flex: 1; background: #e0e0e0; height: 25px; border-radius: 12px; overflow: hidden;">
-                                <div style="width: ${progressPercent}%; height: 100%; background: ${progressBarColor}; transition: width 0.3s;"></div>
-                            </div>
-                            <span style="font-weight: 600; font-size: 1.1em;">${progressPercent}%</span>
-                        </div>
-                    `;
+                    // 진도(톤 단위) UI
+                    const progressBar = renderTonProgress(order.total_target_weight, order.completed_weight);
 
                     const rowBg = isCompleted ? '#f0f8f0' : '#ffffff';
 
@@ -3657,13 +3658,15 @@ function updateLanguage() {
                     const total = order.total_target_weight ? formatNumber(order.total_target_weight) + ' kg' : '-';
                     const prog = order.progress_percent || 0;
 
+                    const progCell = renderTonProgress(order.total_target_weight, order.completed_weight);
+
                     html += `
                         <tr>
                             <td>${created}</td>
                             <td>${workNo}</td>
                             <td>${prod}</td>
                             <td>${total}</td>
-                            <td>${prog}%</td>
+                            <td>${progCell}</td>
                             <td>
                                 <button class="btn primary" onclick="startBlendingFromOrder(${order.id}, '${escapeHtml(order.product_name || '')}', '${escapeHtml(order.work_order_number || '')}')" style="padding:6px 10px;">
                                     작업시작하기
@@ -3793,6 +3796,37 @@ function updateLanguage() {
             const n = parseFloat(num);
             if (isNaN(n)) return '';
             return n.toFixed(2);
+        }
+
+        // 진도(톤 단위) 시각화: 네모칸으로 표현 (정수톤 기준, 소수 단위 미표시)
+        function renderTonProgress(totalKg, completedKg) {
+            const totalTons = Math.max(0, Math.ceil(Number(totalKg || 0) / 1000)); // 총 톤은 올림(작업계획에서 남는 부분도 칸으로 표시)
+            const completedTons = Math.max(0, Math.floor(Number(completedKg || 0) / 1000)); // 완료는 정수톤 단위로만 채움
+
+            // 최소 1칸 보장
+            const totalBoxesRaw = Math.max(1, totalTons);
+            const MAX_BOXES = 50; // 너무 많은 칸은 생략(표시 최대)
+            const totalBoxes = Math.min(totalBoxesRaw, MAX_BOXES);
+
+            // 표시할 채워진 박스 수 (정수톤 기준, 제한 반영)
+            const fullBoxes = Math.min(totalBoxes, completedTons);
+
+            let boxesHtml = '<div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">';
+            for (let i = 0; i < totalBoxes; i++) {
+                if (i < fullBoxes) {
+                    boxesHtml += '<div style="width:18px;height:18px;border-radius:3px;background:#4CAF50;border:1px solid #ccc;"></div>';
+                } else {
+                    boxesHtml += '<div style="width:18px;height:18px;border-radius:3px;border:1px solid #ccc;background:#fff;"></div>';
+                }
+            }
+            boxesHtml += '</div>';
+
+            // 남은 톤: 소수점 표시는 하지 않음(올림으로 표시하여 안전하게 남은량을 보여줌)
+            const remainingTonsInt = Math.max(0, Math.ceil((Number(totalKg || 0) / 1000) - (Number(completedKg || 0) / 1000)));
+            const remainingText = `<div style="font-size:0.95em;font-weight:600;margin-top:6px;">남은: ${remainingTonsInt} ton</div>`;
+            const note = totalBoxesRaw > MAX_BOXES ? `<div style="font-size:0.8em;color:#888;margin-top:4px;">(총 ${totalTons} ton, 표시 ${totalBoxes}칸)</div>` : '';
+
+            return `<div style="display:flex;flex-direction:column;align-items:flex-start;">${boxesHtml}${remainingText}${note}</div>`;
         }
 
         // 초기 로드
