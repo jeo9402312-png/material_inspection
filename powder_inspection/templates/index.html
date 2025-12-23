@@ -89,24 +89,24 @@
                 <form id="incomingForm">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div class="form-group">
-                            <label><span data-i18n="powderName">분말명</span> *</label>
+                            <label for="incomingPowderName"><span data-i18n="powderName">분말명</span> *</label>
                             <select id="incomingPowderName" required>
                                 <option value="" data-i18n="selectPlaceholder">선택하세요</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="lotNumberLabel">LOT 번호</span> *</label>
+                            <label for="incomingLotNumber"><span data-i18n="lotNumberLabel">LOT 번호</span> *</label>
                             <input type="text" id="incomingLotNumber" required>
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="inspectionTypeLabel">검사 타입</span> *</label>
+                            <label for="incomingInspectionType"><span data-i18n="inspectionTypeLabel">검사 타입</span> *</label>
                             <select id="incomingInspectionType" required>
                                 <option value="일상점검" data-i18n="dailyInspection">일상점검</option>
                                 <option value="정기점검" data-i18n="periodicInspection">정기점검</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="inspectorLabel">검사자</span> *</label>
+                            <label for="incomingInspector"><span data-i18n="inspectorLabel">검사자</span> *</label>
                             <select id="incomingInspector" required>
                                 <option value="" data-i18n="selectPlaceholder">선택하세요</option>
                             </select>
@@ -142,25 +142,25 @@
                 <form id="blendingOrderForm">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div class="form-group">
-                            <label><span data-i18n="productName">제품명</span> *</label>
+                            <label for="orderProductName"><span data-i18n="productName">제품명</span> *</label>
                             <select id="orderProductName" required onchange="loadOrderRecipe()">
                                 <option value="">제품 선택</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>작업일자</label>
+                            <label for="orderDate">작업일자</label>
                             <input type="date" id="orderDate" style="padding:8px;">
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="totalTargetWeight">총 목표중량 (kg)</span> *</label>
+                            <label for="orderTotalWeight"><span data-i18n="totalTargetWeight">총 목표중량 (kg)</span> *</label>
                             <input type="number" step="100" id="orderTotalWeight" required placeholder="예: 10000">
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="createdBy">작성자</span></label>
+                            <label for="orderCreatedBy"><span data-i18n="createdBy">작성자</span></label>
                             <input type="text" id="orderCreatedBy" placeholder="작성자 이름">
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="notes">비고</span></label>
+                            <label for="orderNotes"><span data-i18n="notes">비고</span></label>
                             <input type="text" id="orderNotes" placeholder="비고사항">
                         </div>
                     </div>
@@ -173,7 +173,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 data-i18n="blendingOrderList">작업지시서 목록</h3>
                     <div>
-                        <label style="margin-right: 10px;" data-i18n="filterByStatus">상태 필터:</label>
+                        <label for="orderStatusFilter" style="margin-right: 10px;" data-i18n="filterByStatus">상태 필터:</label>
                         <select id="orderStatusFilter" onchange="loadBlendingOrders()">
                             <option value="all" data-i18n="allStatus">전체</option>
                             <option value="in_progress" data-i18n="inProgressStatus" selected>진행중</option>
@@ -202,21 +202,21 @@
                 <form id="blendingForm">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div class="form-group">
-                            <label><span data-i18n="productName">제품명</span> *</label>
+                            <label for="blendingProductName"><span data-i18n="productName">제품명</span> *</label>
                             <select id="blendingProductName" onchange="loadRecipeForProduct()" required>
                                 <option value="" data-i18n="selectPlaceholder">선택하세요</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="workOrderNumber">작업지시 번호</span></label>
+                            <label for="blendingWorkOrder"><span data-i18n="workOrderNumber">작업지시 번호</span></label>
                             <input type="text" id="blendingWorkOrder" placeholder="예: WO-20250119-001 (선택사항)">
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="batchLotNumber">배합 LOT 번호</span> *</label>
+                            <label for="blendingBatchLot"><span data-i18n="batchLotNumber">배합 LOT 번호</span> *</label>
                             <input type="text" id="blendingBatchLot" required readonly style="background: #f5f5f5;">
                         </div>
                         <div class="form-group">
-                            <label><span data-i18n="blendingWeight">배합중량 (kg)</span> *</label>
+                            <label for="blendingTargetWeight"><span data-i18n="blendingWeight">배합중량 (kg)</span> *</label>
                             <select id="blendingTargetWeight" required>
                                 <option value="">선택하세요</option>
                                 <option value="1000">1 ton (1,000 kg)</option>
@@ -229,7 +229,7 @@
                         <!-- Main 분말 중량 선택 영역 (동적 생성) -->
                         <div id="mainPowderWeightsContainer" style="display: none;"></div>
                         <div class="form-group">
-                            <label><span data-i18n="operator">작업자</span> *</label>
+                            <label for="blendingOperator"><span data-i18n="operator">작업자</span> *</label>
                             <select id="blendingOperator" required>
                                 <option value="" data-i18n="selectPlaceholder">선택하세요</option>
                             </select>
