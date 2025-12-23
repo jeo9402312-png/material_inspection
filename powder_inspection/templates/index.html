@@ -526,14 +526,17 @@
 
             <!-- 관리자 서브메뉴 탭 -->
             <div class="admin-tabs">
-                <button class="admin-tab active" onclick="showAdminTab('powder-spec')">
-                    <span data-i18n="adminTabPowderSpec">분말사양관리</span>
+                <button id="adminTabIncoming" class="admin-tab active" onclick="showPowderManagement('incoming')">
+                    <span>수입분말관리</span>
                 </button>
-                <button class="admin-tab" onclick="showAdminTab('user-mgmt')">
-                    <span data-i18n="adminTabUserMgmt">검사자&작업자관리</span>
+                <button id="adminTabMixing" class="admin-tab" onclick="showPowderManagement('mixing')">
+                    <span>배합분말관리</span>
                 </button>
                 <button class="admin-tab" onclick="showAdminTab('recipe-mgmt')">
                     <span data-i18n="adminTabRecipeMgmt">배합규격서관리</span>
+                </button>
+                <button class="admin-tab" onclick="showAdminTab('user-mgmt')">
+                    <span data-i18n="adminTabUserMgmt">검사자&작업자관리</span>
                 </button>
             </div>
 

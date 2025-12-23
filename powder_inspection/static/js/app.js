@@ -127,6 +127,27 @@ function updateLanguage() {
             document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
+        // 분말 관리 탭 : 수입 / 배합 분말을 분리하여 같은 컨텐츠를 재사용
+        let powderSpecMode = 'incoming';
+
+        function showPowderManagement(mode) {
+            // mode: 'incoming' or 'mixing'
+            powderSpecMode = mode;
+
+            // 탭 버튼 처리 (active 토글)
+            document.getElementById('adminTabIncoming').classList.remove('active');
+            document.getElementById('adminTabMixing').classList.remove('active');
+            if (mode === 'incoming') document.getElementById('adminTabIncoming').classList.add('active');
+            else document.getElementById('adminTabMixing').classList.add('active');
+
+            // 관리자 컨텐츠는 기존 powder-spec-tab 사용
+            document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('powder-spec-tab').classList.add('active');
+
+            // 로드 및 필터링
+            loadPowderSpecs(mode);
+        }
+
         // ============================================
         // 대시보드: 진행중 검사 목록
         // ============================================
@@ -153,10 +174,32 @@ function updateLanguage() {
                                 <td>${item.inspection_type}</td>
                                 <td>${item.inspector}</td>
                                 <td><span class="badge progress">${item.progress}</span></td>
-                                <td>
+                                    namesDiv.innerHTML = '';
+                                    const filtered = filterCategory ? data.data.filter(s => s.category === filterCategory) : data.data;
+                                    filtered.forEach(spec => {
+                                        const item = document.createElement('div');
+                                        item.className = 'powder-item';
+                                        item.dataset.specId = spec.id;
+                                        item.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">` +
+                                            `<div><strong>${spec.powder_name}</strong><div style="font-size:0.85em;color:#666;">${spec.category === 'incoming' ? t('incoming') : t('mixing')}</div></div>` +
+                                            `</div>`;
                                     <button class="btn" onclick="continueInspection('${item.powder_name}', '${item.lot_number}', '${item.category}')" style="margin-right: 5px;">${t('continue')}</button>
+                                        item.addEventListener('click', () => {
+                                            document.querySelectorAll('.vertical-list .powder-item').forEach(el => el.classList.remove('active'));
+                                            item.classList.add('active');
+                                            showPowderSpecDetail(spec.id);
+                                        });
                                     <button class="btn danger" onclick="deleteIncompleteInspection('${item.powder_name}', '${item.lot_number}')">${t('delete')}</button>
+                                        namesDiv.appendChild(item);
+                                    });
                                 </td>
+                                    // 자동 선택
+                                    const first = namesDiv.querySelector('.powder-item');
+                                    if (first) {
+                                        first.classList.add('active');
+                                        const firstId = first.dataset.specId;
+                                        showPowderSpecDetail(parseInt(firstId));
+                                    }
                             </tr>
                         `;
                     });
@@ -1052,7 +1095,7 @@ function updateLanguage() {
 
         // 관리자 페이지 로드
         async function loadAdminPage() {
-            await loadPowderSpecs();
+                    await loadPowderSpecs(powderSpecMode);
             // particlePowderSelect 관련 DOM이 없는 경우(템플릿에 미구현) 로딩 건너뛰기
             if (document.getElementById('particlePowderSelect')) {
                 await loadParticlePowderList();
