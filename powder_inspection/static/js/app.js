@@ -2611,9 +2611,12 @@ function updateLanguage() {
                 const data = await response.json();
 
                 if (data.success) {
-                    currentBlendingWork = data.work;
+                            currentBlendingWork = data.work;
                     currentBlendingRecipes = data.recipes;
                     currentMaterialInputs = data.material_inputs;
+
+                    // Ensure each recipe has a computed calculated_weight (client-side fallback)
+                    ensureBlendingCalculatedWeights();
 
                     renderMaterialInputPage();
                     showPage('material-input');
@@ -2625,11 +2628,61 @@ function updateLanguage() {
             }
         }
 
+        function ensureBlendingCalculatedWeights() {
+            try {
+                const blendingWeight = currentBlendingWork && Number(currentBlendingWork.target_total_weight) || 0;
+                const mainRecipes = currentBlendingRecipes.filter(r => r.is_main);
+                const totalMainRatio = mainRecipes.reduce((s, r) => s + (r.ratio || 0), 0);
+
+                console.log('[material-input] ensureBlendingCalculatedWeights: blendingWeight=', blendingWeight, 'recipes=', currentBlendingRecipes.length);
+
+                currentBlendingRecipes.forEach(recipe => {
+                    if (!recipe || typeof recipe !== 'object') return;
+
+                    const hasCalc = recipe.calculated_weight && Number(recipe.calculated_weight) !== 0;
+                    if (hasCalc) return;
+
+                    let target = 0;
+
+                    if (blendingWeight > 0) {
+                        if (recipe.is_main) {
+                            if (mainRecipes.length === 1) {
+                                target = blendingWeight;
+                            } else if (totalMainRatio > 0) {
+                                target = blendingWeight * (recipe.ratio / totalMainRatio);
+                            } else {
+                                target = blendingWeight * (recipe.ratio / 100);
+                            }
+                        } else {
+                            if (totalMainRatio > 0) {
+                                target = blendingWeight * (recipe.ratio / totalMainRatio);
+                            } else {
+                                target = blendingWeight * (recipe.ratio / 100);
+                            }
+                        }
+
+                        recipe.calculated_weight = Number(target);
+                        recipe.calculated_min = Number((target * (1 - (recipe.tolerance_percent || 0) / 100)).toFixed(2));
+                        recipe.calculated_max = Number((target * (1 + (recipe.tolerance_percent || 0) / 100)).toFixed(2));
+
+                        console.log(`[material-input] computed recipe ${recipe.id} (${recipe.powder_name}): target=${recipe.calculated_weight}, min=${recipe.calculated_min}, max=${recipe.calculated_max}`);
+                    } else {
+                        console.warn(`[material-input] cannot compute recipe ${recipe.id} (${recipe.powder_name}): work.target_total_weight is missing or zero`);
+                    }
+                });
+            } catch (err) {
+                console.error('ensureBlendingCalculatedWeights error:', err);
+            }
+        }
+
         function renderMaterialInputPage() {
             // 작업 정보 표시
             document.getElementById('materialWorkOrder').textContent = currentBlendingWork.work_order;
             document.getElementById('materialProductName').textContent = currentBlendingWork.product_name;
             document.getElementById('materialBatchLot').textContent = currentBlendingWork.batch_lot;
+
+            // Debug: show blending target and recipes count
+            console.log('[material-input] load:', { workId: currentBlendingWork.id, target_total_weight: currentBlendingWork.target_total_weight, recipes: currentBlendingRecipes.length });
 
             const inputCount = currentMaterialInputs.length;
             const totalCount = currentBlendingRecipes.length;
