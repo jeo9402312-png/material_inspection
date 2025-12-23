@@ -3170,7 +3170,9 @@ function updateLanguage() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('배합 작업이 완료되었습니다!');
+                    // 서버측 처리가 완료됨 — 라벨을 생성하여 우측 패널에 표시합니다.
+                    alert('배합 작업이 완료되었습니다! 우측 라벨을 확인해 주세요.');
+
                     // 완료 후 관련 목록을 즉시 갱신하여 진도표기가 반영되도록 함
                     try {
                         loadBlendingWorks();
@@ -3182,13 +3184,166 @@ function updateLanguage() {
                         if (typeof loadBlendingOrdersForBlending === 'function') loadBlendingOrdersForBlending();
                     } catch (e) { /* noop */ }
 
-                    // 대시보드로 이동
-                    showPage('dashboard');
+                    // 현재 작업 정보를 최신화한 뒤 라벨 패널 표시
+                    try {
+                        // 최신화된 작업 정보를 서버에서 가져와 표시 (end_time 등 포함)
+                        const workResp = await fetch(`${API_BASE}/api/blending/work/${currentBlendingWork.id}`);
+                        const workData = await workResp.json();
+                        if (workData.success && workData.work) {
+                            currentBlendingWork = workData.work;
+                        }
+                    } catch (err) {
+                        console.warn('작업정보 재조회 실패:', err);
+                    }
+
+                    // 라벨 생성 및 표시
+                    renderLabelPanel(currentBlendingWork);
+
+                    // (자동 이동을 제거) 사용자가 라벨 확인/인쇄 후 원하는 화면으로 이동할 수 있도록 함
                 } else {
                     alert('완료 처리 실패: ' + data.message);
                 }
             } catch (error) {
                 alert('오류: ' + error.message);
+            }
+        }
+
+        // 라벨 생성/렌더링: 우측 라벨 패널 제어 함수들
+        function renderLabelPanel(work) {
+            if (!work) return alert('라벨 정보를 불러올 수 없습니다.');
+
+            const panel = document.getElementById('labelPanel');
+            const list = document.getElementById('labelList');
+            if (!panel || !list) return;
+
+            // 초기화
+            list.innerHTML = '';
+
+            const targetWeight = Number(work.target_total_weight) || 0;
+            const packSize = 1000; // 1 ton = 1000 kg
+            const totalPacks = Math.max(1, Math.ceil(targetWeight / packSize));
+
+            for (let i = 1; i <= totalPacks; i++) {
+                const isLast = (i === totalPacks);
+                // 마지막 pack의 중량은 잔여중량
+                let packWeight = packSize;
+                if (isLast && (targetWeight % packSize) !== 0) {
+                    const remainder = targetWeight - Math.floor(targetWeight / packSize) * packSize;
+                    if (remainder > 0) packWeight = remainder;
+                }
+
+                const labelDiv = document.createElement('div');
+                labelDiv.style.width = '92mm';
+                labelDiv.style.height = '92mm';
+                labelDiv.style.boxSizing = 'border-box';
+                labelDiv.style.background = 'white';
+                labelDiv.style.border = '1px solid #ddd';
+                labelDiv.style.display = 'flex';
+                labelDiv.style.flexDirection = 'column';
+                labelDiv.style.justifyContent = 'space-between';
+                labelDiv.style.padding = '8px';
+                labelDiv.style.borderRadius = '6px';
+
+                // 날짜 (작업 완료시엔 서버의 end_time을 사용하거나 현재 시각 사용)
+                const dateStr = (work.end_time) ? new Date(work.end_time).toLocaleString('ko-KR') : new Date().toLocaleString('ko-KR');
+
+                const company = translations[currentLang].companyName || 'Johnson Electric Operations';
+                const product = work.product_name || work.product_name || '';
+                const batchLot = work.batch_lot || '';
+
+                const infoHtml = `
+                    <div class="label-content">
+                        <div style="text-align:center; width:100%;">
+                            <div style="font-weight:700; font-size:14px;">${company}</div>
+                            <div style="font-weight:600; font-size:13px; margin-top:6px;">${product}</div>
+                            <div style="font-size:12px; color:#444; margin-top:4px;">LOT: ${batchLot}</div>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
+                            <svg id="label-barcode-${i}"></svg>
+                            <div style="font-size:11px; color:#222;">${translations[currentLang].labelDate || '작업날짜'}: ${dateStr}</div>
+                            <div style="font-size:12px; color:#222; font-weight:600;">${translations[currentLang].labelPack || 'Pack'}: ${i}/${totalPacks}</div>
+                            <div style="font-size:12px; color:#222;">${translations[currentLang].labelWeight || '중량'}: ${formatNumber(packWeight)} kg</div>
+                        </div>
+
+                        <div style="display:flex; gap:6px; justify-content:center; width:100%;">
+                            <button class="btn" onclick="printLabel(${i})">${translations[currentLang].printLabel || '인쇄'}</button>
+                        </div>
+                    </div>
+                `;
+
+                labelDiv.innerHTML = infoHtml;
+                list.appendChild(labelDiv);
+
+                // 바코드 내용: 간단한 파이프 구분 문자열
+                const barcodeValue = `PN:${product}|LOT:${batchLot}|DATE:${dateStr}|COMP:${company}|PACK:${i}/${totalPacks}|WT:${packWeight}kg`;
+
+                // render barcode into svg
+                try {
+                    const svgEl = labelDiv.querySelector(`#label-barcode-${i}`);
+                    if (svgEl && typeof JsBarcode === 'function') {
+                        JsBarcode(svgEl, barcodeValue, { format: 'CODE128', width: 1, height: 40, displayValue: false });
+                    }
+                } catch (err) {
+                    console.error('바코드 렌더링 오류:', err);
+                }
+            }
+
+            // show panel
+            panel.style.display = 'block';
+            panel.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideLabelPanel() {
+            const panel = document.getElementById('labelPanel');
+            if (panel) {
+                panel.style.display = 'none';
+                panel.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function printLabel(index) {
+            // 개별 라벨 인쇄: 해당 라벨 DOM을 복사하여 새 창에서 인쇄
+            const list = document.getElementById('labelList');
+            const labelEl = list && list.children && list.children[index - 1];
+            if (!labelEl) return alert('라벨을 찾을 수 없습니다.');
+
+            const content = labelEl.innerHTML;
+            const w = window.open('', '_blank');
+            if (!w) return alert('팝업 차단을 확인하세요.');
+
+            const html = `
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>라벨 인쇄</title>
+                    <style>
+                        body { margin:0; padding:0; }
+                        .label { width:100mm; height:100mm; display:flex; align-items:center; justify-content:center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="label">${content}</div>
+                    <script>
+                        window.onload = function() { setTimeout(function(){ window.print(); window.close(); }, 300); };
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            w.document.open();
+            w.document.write(html);
+            w.document.close();
+        }
+
+        function printAllLabels() {
+            const list = document.getElementById('labelList');
+            if (!list || !list.children || list.children.length === 0) return alert('출력할 라벨이 없습니다.');
+
+            // 간단한 방식: 개별 라벨을 순차적으로 인쇄 (브라우저가 팝업 차단을 할 수 있음)
+            for (let i = 0; i < list.children.length; i++) {
+                // 약간의 지연을 주어 연속 팝업/인쇄가 처리되도록 함
+                setTimeout(() => { printLabel(i + 1); }, i * 700);
             }
         }
 

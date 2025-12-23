@@ -5,6 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>배합공정관리 시스템</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- JsBarcode for barcode rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        /* 라벨 패널 스타일: 인쇄용 100mm x 100mm 박스 */
+        .label-panel {
+            width: 100mm;
+            min-width: 100mm;
+            height: 100mm;
+            box-sizing: border-box;
+            border: 1px dashed #ccc;
+            padding: 8px;
+            background: white;
+            display: none; /* 기본 숨김 */
+        }
+
+        .label-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; }
+        }
+    </style>
 </head>
 <body>
     <!-- 사이드바 네비게이션 -->
@@ -333,12 +365,32 @@
                 </div>
             </div>
 
-            <!-- 원재료 투입 목록 -->
-            <div id="materialInputList"></div>
+            <!-- 원재료 투입 목록 및 라벨 패널: 왼쪽 작업 정보, 오른쪽 라벨 출력 영역 -->
+            <div style="display: flex; gap: 18px; align-items:flex-start;">
+                <div style="flex: 1;">
+                    <!-- 원재료 투입 목록 -->
+                    <div id="materialInputList"></div>
 
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn" onclick="completeBlendingWork()" id="completeBlendingBtn" disabled data-i18n="completeBlending">배합 작업 완료</button>
-                <button class="btn danger" onclick="showPage('dashboard')" data-i18n="backToDashboard">대시보드로 돌아가기</button>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn" onclick="completeBlendingWork()" id="completeBlendingBtn" disabled data-i18n="completeBlending">배합 작업 완료</button>
+                        <button class="btn danger" onclick="showPage('dashboard')" data-i18n="backToDashboard">대시보드로 돌아가기</button>
+                    </div>
+                </div>
+
+                <!-- 라벨 패널: 완료 후 표시되며 인쇄 버튼을 제공 -->
+                <div id="labelPanel" class="label-panel print-area" aria-hidden="true">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:6px;">
+                        <strong data-i18n="labelPanelTitle">바코드 라벨</strong>
+                        <div>
+                            <button class="btn" onclick="printAllLabels()" style="margin-right:6px;" data-i18n="printAll">모두 인쇄</button>
+                            <button class="btn secondary" onclick="hideLabelPanel()" data-i18n="close">닫기</button>
+                        </div>
+                    </div>
+                    <div id="labelList" style="display:flex; gap:8px; flex-wrap:wrap; align-content:flex-start; justify-content:center;
+                        width:100%; height: calc(100mm - 36px); overflow:auto; padding:6px; background:#fafafa; border-radius:4px;">
+                        <!-- 개별 라벨이 여기에 렌더링 됩니다 -->
+                    </div>
+                </div>
             </div>
         </div>
 

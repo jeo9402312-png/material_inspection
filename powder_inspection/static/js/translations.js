@@ -195,6 +195,16 @@ const translations = {
         saveMaterialInput: '투입 기록 저장',
         completeBlending: '배합 작업 완료',
 
+        // 라벨/바코드
+        labelPanelTitle: '바코드 라벨',
+        printAll: '모두 인쇄',
+        printLabel: '인쇄',
+        close: '닫기',
+        companyName: 'Johnson Electric Operations',
+        labelPack: 'Pack',
+        labelWeight: '중량',
+        labelDate: '작업날짜',
+
         // 추적성 조회
         navTraceability: '추적성 조회',
         traceabilityTitle: '추적성 조회',
@@ -208,7 +218,17 @@ const translations = {
         usageHistory: '사용 이력',
         usageHistoryDesc: '이 원재료 LOT이 사용된 모든 배합 작업',
         noUsageHistory: '아직 사용되지 않은 원재료입니다',
-        actualTotalWeight: '실제 총 중량'
+        actualTotalWeight: '실제 총 중량',
+
+        // 라벨/바코드
+        labelPanelTitle: 'Barcode Label',
+        printAll: 'Print All',
+        printLabel: 'Print',
+        close: 'Close',
+        companyName: 'Johnson Electric Operations',
+        labelPack: 'Pack',
+        labelWeight: 'Weight',
+        labelDate: 'Date'
     },
     en: {
         // 사이드바
