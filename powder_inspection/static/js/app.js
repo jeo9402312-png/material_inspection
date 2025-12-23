@@ -2745,16 +2745,30 @@ function updateLanguage() {
                         : '';
                     html += `
                         <td style="padding: 15px; border: 1px solid #ddd;">
-                            <select id="weight-${recipe.id}-1"
-                                onchange="checkWeightJudgement('${recipe.id}')"
-                                style="width:100%; padding: 10px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 5px; text-align: center;">
-                                <option value="">중량 선택</option>
-                                <option value="1000" ${String(mainWeight) === '1000' ? 'selected' : ''}>1 ton (1,000 kg)</option>
-                                <option value="2000" ${String(mainWeight) === '2000' ? 'selected' : ''}>2 ton (2,000 kg)</option>
-                                <option value="3000" ${String(mainWeight) === '3000' ? 'selected' : ''}>3 ton (3,000 kg)</option>
-                                <option value="4000" ${String(mainWeight) === '4000' ? 'selected' : ''}>4 ton (4,000 kg)</option>
-                                <option value="5000" ${String(mainWeight) === '5000' ? 'selected' : ''}>5 ton (5,000 kg)</option>
-                            </select>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <select id="weight-${recipe.id}-1"
+                                    onchange="checkWeightJudgement('${recipe.id}')"
+                                    style="width:100%; padding: 10px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 5px; text-align: center;">
+                                    <option value="">중량 선택</option>
+                                    <option value="1000" ${String(mainWeight) === '1000' ? 'selected' : ''}>1 ton (1,000 kg)</option>
+                                    <option value="2000" ${String(mainWeight) === '2000' ? 'selected' : ''}>2 ton (2,000 kg)</option>
+                                    <option value="3000" ${String(mainWeight) === '3000' ? 'selected' : ''}>3 ton (3,000 kg)</option>
+                                    <option value="4000" ${String(mainWeight) === '4000' ? 'selected' : ''}>4 ton (4,000 kg)</option>
+                                    <option value="5000" ${String(mainWeight) === '5000' ? 'selected' : ''}>5 ton (5,000 kg)</option>
+                                </select>
+
+                                <div id="weight-${recipe.id}-2-container" style="display:none;">
+                                    <select id="weight-${recipe.id}-2" onchange="checkWeightJudgement('${recipe.id}')"
+                                        style="width:100%; padding: 10px; font-size: 1.1em; border: 2px solid #ddd; border-radius: 5px; text-align: center;">
+                                        <option value="">중량2 선택</option>
+                                        <option value="1000">1 ton (1,000 kg)</option>
+                                        <option value="2000">2 ton (2,000 kg)</option>
+                                        <option value="3000">3 ton (3,000 kg)</option>
+                                        <option value="4000">4 ton (4,000 kg)</option>
+                                        <option value="5000">5 ton (5,000 kg)</option>
+                                    </select>
+                                </div>
+                            </div>
                         </td>
                     `;
                 } else {
@@ -2886,6 +2900,7 @@ function updateLanguage() {
         // show second lot and weight input for a recipe
         function showSecondLot(recipeId) {
             const lot2Container = document.getElementById(`lot-${recipeId}-2-container`);
+            const weight2Container = document.getElementById(`weight-${recipeId}-2-container`);
             const weight2 = document.getElementById(`weight-${recipeId}-2`);
             const addBtn = document.getElementById(`add-lot-btn-${recipeId}`);
             const lot1 = document.getElementById(`lot-${recipeId}-1`);
@@ -2895,7 +2910,8 @@ function updateLanguage() {
             const lot1Value = lot1 ? lot1.value : '';
 
             if (lot2Container) lot2Container.style.display = 'block';
-            if (weight2) weight2.style.display = 'block';
+            if (weight2Container) weight2Container.style.display = 'block';
+            else if (weight2) weight2.style.display = 'block';
             if (addBtn) addBtn.style.display = 'none';
 
             // lot2의 옵션을 lot1과 동일하게 복사 (새로 로드하지 않음)
