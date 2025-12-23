@@ -410,15 +410,16 @@ def init_database():
     print("샘플 데이터 입력 중...")
 
     # 분말 사양 샘플 데이터
+    # 유동도만 '일상', 나머지는 모두 '정기'
     # 수입검사용 분말 3개 (원료)
     powder_specs = [
-        ('순철분말', 25, 35, '일상', 2.5, 3.0, '일상', 0.5, 0.8, '일상', None, None, '비활성', 0, 0.5, '일상', 0, 1.0, '정기', 5, 8, '정기', 850, 950, '정기', 120, 150, '정기', 180, 220, '정기', '정기', 'incoming'),
-        ('구리분말', 20, 30, '정기', 2.0, 2.8, '일상', 0.4, 0.7, '일상', 1.0, 2.0, '정기', 0, 0.3, '일상', 0, 0.8, '일상', 4, 7, '일상', 800, 900, '정기', 100, 140, '정기', 160, 200, '정기', '정기', 'incoming'),
-        ('흑연분말', 30, 40, '일상', 3.0, 3.5, '일상', 0.6, 0.9, '일상', 2.0, 3.0, '일상', 0, 0.4, '정기', 0, 1.2, '정기', 6, 9, '정기', 900, 1000, '정기', 130, 160, '정기', 200, 240, '정기', '정기', 'incoming'),
+        ('순철분말', 25, 35, '일상', 2.5, 3.0, '정기', 0.5, 0.8, '정기', None, None, '비활성', 0, 0.5, '정기', 0, 1.0, '정기', 5, 8, '정기', 850, 950, '정기', 120, 150, '정기', 180, 220, '정기', '정기', 'incoming'),
+        ('구리분말', 20, 30, '일상', 2.0, 2.8, '정기', 0.4, 0.7, '정기', 1.0, 2.0, '정기', 0, 0.3, '정기', 0, 0.8, '정기', 4, 7, '정기', 800, 900, '정기', 100, 140, '정기', 160, 200, '정기', '정기', 'incoming'),
+        ('흑연분말', 30, 40, '일상', 3.0, 3.5, '정기', 0.6, 0.9, '정기', 2.0, 3.0, '정기', 0, 0.4, '정기', 0, 1.2, '정기', 6, 9, '정기', 900, 1000, '정기', 130, 160, '정기', 200, 240, '정기', '정기', 'incoming'),
         # 배합검사용 분말 3개 (완제품)
-        ('표준배합철분', 28, 36, '일상', 2.7, 3.2, '일상', 0.5, 0.85, '일상', 0.6, 1.2, '정기', 0, 0.4, '일상', 0, 0.9, '정기', 5.5, 8.5, '정기', 870, 970, '정기', 125, 155, '정기', 185, 225, '정기', '정기', 'mixing'),
-        ('고강도배합분말', 26, 34, '일상', 2.8, 3.3, '일상', 0.55, 0.88, '일상', 0.4, 1.0, '정기', 0, 0.35, '일상', 0, 0.85, '정기', 6, 9, '정기', 900, 980, '정기', 130, 160, '정기', 190, 230, '정기', '정기', 'mixing'),
-        ('경량배합분말', 30, 38, '일상', 2.4, 2.9, '일상', 0.6, 0.95, '일상', 0.6, 1.4, '정기', 0, 0.45, '일상', 0, 1.0, '정기', 5, 8, '정기', 850, 950, '정기', 120, 150, '정기', 180, 220, '정기', '정기', 'mixing')
+        ('표준배합철분', 28, 36, '일상', 2.7, 3.2, '정기', 0.5, 0.85, '정기', 0.6, 1.2, '정기', 0, 0.4, '정기', 0, 0.9, '정기', 5.5, 8.5, '정기', 870, 970, '정기', 125, 155, '정기', 185, 225, '정기', '정기', 'mixing'),
+        ('고강도배합분말', 26, 34, '일상', 2.8, 3.3, '정기', 0.55, 0.88, '정기', 0.4, 1.0, '정기', 0, 0.35, '정기', 0, 0.85, '정기', 6, 9, '정기', 900, 980, '정기', 130, 160, '정기', 190, 230, '정기', '정기', 'mixing'),
+        ('경량배합분말', 30, 38, '일상', 2.4, 2.9, '정기', 0.6, 0.95, '정기', 0.6, 1.4, '정기', 0, 0.45, '정기', 0, 1.0, '정기', 5, 8, '정기', 850, 950, '정기', 120, 150, '정기', 180, 220, '정기', '정기', 'mixing')
     ]
 
     cursor.executemany('''
@@ -497,6 +498,103 @@ def init_database():
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', sample_recipes)
 
+    # 수입검사 샘플 데이터 (각 분말별 2개 LOT, 합격 상태)
+    print("\n수입검사 샘플 데이터 생성 중...")
+    
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    
+    base_date = datetime(2024, 12, 1, 10, 0, 0, tzinfo=ZoneInfo('Asia/Seoul'))
+    
+    # 검사자, 검사 구분 
+    inspectors = ['김철수', '이영희', '박민수']
+    inspection_types = ['full_test', 'sampling_test']
+    
+    # 각 분말별 2개 LOT 검사 데이터 생성
+    lot_counter = 1
+    inspection_count = 0
+    
+    for powder_info in [('순철분말', 'incoming'), ('구리분말', 'incoming'), ('흑연분말', 'incoming')]:
+        powder_name, category = powder_info
+        
+        # 각 분말마다 2개 LOT 생성
+        for lot_idx in range(2):
+            lot_number = f"LOT-{powder_name[:2]}-2024-{lot_counter:03d}"
+            lot_counter += 1
+            
+            inspection_time = base_date + timedelta(days=lot_idx, hours=lot_idx*2)
+            
+            # 기본적으로 합격(OK)으로 설정된 데이터만 입력
+            cursor.execute('''
+                INSERT INTO inspection_result (
+                    powder_name, lot_number, inspector, inspection_time, inspection_type,
+                    flow_rate_1, flow_rate_2, flow_rate_3, flow_rate_avg, flow_rate_result,
+                    apparent_density_empty_cup_1, apparent_density_powder_weight_1, apparent_density_1,
+                    apparent_density_empty_cup_2, apparent_density_powder_weight_2, apparent_density_2,
+                    apparent_density_empty_cup_3, apparent_density_powder_weight_3, apparent_density_3,
+                    apparent_density_avg, apparent_density_result,
+                    c_content_1, c_content_2, c_content_3, c_content_avg, c_content_result,
+                    cu_content_1, cu_content_2, cu_content_3, cu_content_avg, cu_content_result,
+                    moisture_initial_weight_1, moisture_dried_weight_1, moisture_1,
+                    moisture_initial_weight_2, moisture_dried_weight_2, moisture_2,
+                    moisture_initial_weight_3, moisture_dried_weight_3, moisture_3,
+                    moisture_avg, moisture_result,
+                    ash_initial_weight_1, ash_ash_weight_1, ash_1,
+                    ash_initial_weight_2, ash_ash_weight_2, ash_2,
+                    ash_initial_weight_3, ash_ash_weight_3, ash_3,
+                    ash_avg, ash_result,
+                    sinter_change_rate_1, sinter_change_rate_2, sinter_change_rate_3, 
+                    sinter_change_rate_avg, sinter_change_rate_result,
+                    sinter_strength_1, sinter_strength_2, sinter_strength_3, 
+                    sinter_strength_avg, sinter_strength_result,
+                    forming_strength_1, forming_strength_2, forming_strength_3, 
+                    forming_strength_avg, forming_strength_result,
+                    forming_load_1, forming_load_2, forming_load_3, 
+                    forming_load_avg, forming_load_result,
+                    particle_size_180_1, particle_size_180_2, particle_size_180_avg, particle_size_180_result,
+                    particle_size_150_1, particle_size_150_2, particle_size_150_avg, particle_size_150_result,
+                    particle_size_106_1, particle_size_106_2, particle_size_106_avg, particle_size_106_result,
+                    particle_size_75_1, particle_size_75_2, particle_size_75_avg, particle_size_75_result,
+                    particle_size_45_1, particle_size_45_2, particle_size_45_avg, particle_size_45_result,
+                    particle_size_45m_1, particle_size_45m_2, particle_size_45m_avg, particle_size_45m_result,
+                    particle_size_result, final_result, category
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                powder_name, lot_number, inspectors[lot_idx % len(inspectors)], inspection_time,
+                inspection_types[lot_idx % len(inspection_types)],
+                # 유동도
+                30.0, 31.0, 30.5, 30.5, 'OK',
+                # 겉보기밀도
+                2.6, 1.0, 2.6, 2.7, 1.0, 2.7, 2.8, 1.0, 2.8, 2.7, 'OK',
+                # C함량
+                0.6, 0.65, 0.7, 0.65, 'OK',
+                # Cu함량
+                0.5, 0.55, 0.6, 0.55, 'OK',
+                # 수분도
+                0.2, 0.18, 0.2, 0.3, 0.18, 0.3, 0.25, 0.18, 0.25, 0.21, 'OK',
+                # 회분도
+                0.1, 0.09, 0.1, 0.15, 0.09, 0.15, 0.12, 0.09, 0.12, 0.11, 'OK',
+                # 소결변화율
+                6.5, 6.8, 7.0, 6.8, 'OK',
+                # 소결강도
+                900, 920, 910, 910, 'OK',
+                # 성형강도
+                130, 135, 132, 132, 'OK',
+                # 성형하중
+                200, 210, 205, 205, 'OK',
+                # 입도분석
+                5.5, 5.8, 5.65, 'OK',
+                10.0, 10.5, 10.25, 'OK',
+                15.0, 15.5, 15.25, 'OK',
+                18.0, 18.5, 18.25, 'OK',
+                17.0, 17.5, 17.25, 'OK',
+                15.0, 15.5, 15.25, 'OK',
+                'OK', 'OK', category
+            ))
+            inspection_count += 1
+
+    print(f"수입검사 샘플 데이터 {inspection_count}개 생성 완료")
+
     conn.commit()
     print("샘플 데이터 입력 완료!")
 
@@ -516,6 +614,9 @@ def init_database():
 
     cursor.execute("SELECT COUNT(*) FROM recipe")
     print(f"배합 규격서: {cursor.fetchone()[0]}개")
+    
+    cursor.execute("SELECT COUNT(*) FROM inspection_result WHERE category = 'incoming'")
+    print(f"수입검사 기록: {cursor.fetchone()[0]}개")
 
     conn.close()
     print("\n데이터베이스 파일: " + db_path)
