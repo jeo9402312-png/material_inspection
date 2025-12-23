@@ -2356,18 +2356,11 @@ function updateLanguage() {
             const container = document.getElementById('recipePreviewContent');
             const blendingWeight = parseFloat(document.getElementById('blendingTargetWeight').value) || 0;
 
-            // Main 분말들 찾기 (최대 2개)
+            // Main 분말들 찾기
             const mainRecipes = recipes.filter(r => r.is_main);
 
-            // Main 분말 각각의 중량 가져오기
-            let mainWeights = {};
-            let totalMainWeight = 0;
-            mainRecipes.forEach((recipe, index) => {
-                const weightInput = document.getElementById(`mainPowderWeight_${index}`);
-                const weight = weightInput ? parseFloat(weightInput.value) || 0 : 0;
-                mainWeights[recipe.powder_name] = weight;
-                totalMainWeight += weight;
-            });
+            // 총 Main 중량은 배합중량을 기준으로 함 (Option A)
+            const totalMainWeight = blendingWeight;
 
             // Main 분말 비율 합계
             const totalMainRatio = mainRecipes.reduce((sum, r) => sum + r.ratio, 0);
@@ -2381,17 +2374,29 @@ function updateLanguage() {
             </tr>`;
 
             recipes.forEach(recipe => {
-                let calculatedWeight = '-';
-                if (recipe.is_main) {
-                    // Main 분말: 개별적으로 선택한 중량
-                    const weight = mainWeights[recipe.powder_name] || 0;
-                    if (weight > 0) {
-                        calculatedWeight = formatNumber(weight.toFixed(2));
+                let calculatedWeightDisplay = '-';
+
+                if (mainRecipes.length > 0) {
+                    // 메인 분말이 존재할 때
+                    if (recipe.is_main) {
+                        // main이 한 개면 전체 배합중량을 할당, 여러개면 ratio로 분배
+                        if (mainRecipes.length === 1) {
+                            calculatedWeightDisplay = formatNumber(totalMainWeight.toFixed(2));
+                        } else if (totalMainRatio > 0) {
+                            const w = totalMainWeight * (recipe.ratio / totalMainRatio);
+                            calculatedWeightDisplay = formatNumber(w.toFixed(2));
+                        }
+                    } else {
+                        // 비주 분말: 총 Main 중량(=배합중량)을 기준으로 비율대로 계산
+                        if (totalMainRatio > 0) {
+                            const w = totalMainWeight * (recipe.ratio / totalMainRatio);
+                            calculatedWeightDisplay = formatNumber(w.toFixed(2));
+                        }
                     }
-                } else if (totalMainWeight > 0 && totalMainRatio > 0) {
-                    // 다른 분말: 전체 main 분말 중량 × (해당 분말 비율 / 전체 main 분말 비율)
-                    const weight = totalMainWeight * (recipe.ratio / totalMainRatio);
-                    calculatedWeight = formatNumber(weight.toFixed(2));
+                } else {
+                    // Main 분말이 없을 때는 기존 방식 - 배합중량 기준 비율로 계산
+                    const w = blendingWeight * (recipe.ratio / 100);
+                    calculatedWeightDisplay = formatNumber(w.toFixed(2));
                 }
 
                 const categoryBadge = recipe.powder_category === 'incoming'
@@ -2404,7 +2409,7 @@ function updateLanguage() {
                     <td>${recipe.powder_name}${mainBadge}</td>
                     <td>${categoryBadge}</td>
                     <td>${formatTwo(recipe.ratio)}%</td>
-                    <td>${calculatedWeight}</td>
+                    <td>${calculatedWeightDisplay}</td>
                 </tr>`;
             });
 
@@ -2412,8 +2417,7 @@ function updateLanguage() {
             container.innerHTML = html;
             document.getElementById('recipePreview').style.display = 'block';
 
-            // Main 분말 중량은 작업지시서 화면에서 입력하지 않도록 변경됨
-            // 필요한 경우 배합 시작 후 원재료 투입 화면에서 톤 단위로 선택하도록 처리합니다.
+            // Note: start 폼에서는 Main 분말 중량을 별도 입력하지 않으므로, 상세 투입 화면에서 TOn 선택을 하도록 합니다.
         }
 
         function renderMainPowderWeightSelectors(mainRecipes) {
